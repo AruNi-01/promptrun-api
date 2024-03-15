@@ -21,3 +21,11 @@ func Err(errCode int, errMsg string) Response {
 		ErrMsg:  errMsg,
 	}
 }
+
+// NotLogin 未登录错误返回
+func NotLogin() Response {
+	return Response{
+		ErrCode: errs.ErrNotLogin,
+		ErrMsg:  "您未登录，请登录后再操作",
+	}
+}

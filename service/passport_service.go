@@ -1,22 +1,34 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"os"
+	"promptrun-api/cache"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/utils"
 	"time"
 )
 
+// LoginReq 登录请求
 type LoginReq struct {
 	Email    string `form:"email" json:"email" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
+// RegisterReq 注册请求
 type RegisterReq struct {
 	LoginReq
 	ConfirmPassword string `form:"confirmPassword" json:"confirmPassword" binding:"required"`
+}
+
+// LoginTicket 登录凭证
+type LoginTicket struct {
+	UserId    int       `json:"userId"`
+	Ticket    string    `json:"ticket"`
+	ExpiredAt time.Time `json:"expiredAt"`
 }
 
 // Register 用户注册
@@ -54,25 +66,70 @@ func (r *LoginReq) Login(c *gin.Context) (model.User, *errs.Errs) {
 	if !user.CheckPassword(r.Password) {
 		return model.User{}, errs.NewErrs(errs.ErrWrongPassword, errors.New("密码错误"))
 	}
+
+	// 生成登录凭证
+	loginTicket := BuildLoginTicket(user.Id)
+	// 将登录凭证存入 Redis
+	jsonTicket, err := json.Marshal(loginTicket)
+	if err != nil {
+		utils.Log().Error(c.FullPath(), "json convert error", err)
+		return model.User{}, errs.NewErrs(errs.ErrJsonConvertError, err)
+	}
+	ticketKey := cache.TicketKey(loginTicket.Ticket)
+	cache.RedisCli.Set(c, ticketKey, jsonTicket, time.Until(loginTicket.ExpiredAt))
+
+	// 设置 Cookie，后续请求携带 Cookie，实现登录状态保持
+	saveCookie(c, loginTicket.Ticket, loginTicket.ExpiredAt)
+
 	return user, nil
 }
 
-// EmailIsExist 邮箱是否存在
-func EmailIsExist(email string) *errs.Errs {
+func saveCookie(c *gin.Context, ticket string, expiredAt time.Time) {
+	c.SetCookie("ticket",
+		ticket,
+		int(time.Until(expiredAt).Seconds()),
+		"/",
+		os.Getenv("COOKIE_DOMAIN"),
+		false,
+		false,
+	)
+}
+
+func emailIsExist(email string) bool {
 	count := 0
 	model.DB.Model(&model.User{}).Where("email = ?", email).Count(&count)
-	if count > 0 {
-		return errs.NewErrs(errs.ErrEmailExist, errors.New("邮箱已注册"))
+	return count > 0
+}
+
+func (r *RegisterReq) valid() *errs.Errs {
+	if emailIsExist(r.Email) {
+		return errs.NewErrs(errs.ErrEmailExist, errors.New("此邮箱已经注册"))
+	}
+	if r.Password != r.ConfirmPassword {
+		return errs.NewErrs(errs.ErrConfirmPasswordDiff, errors.New("两次输入的密码不相同"))
 	}
 	return nil
 }
 
-func (r *RegisterReq) valid() *errs.Errs {
-	if r.Password != r.ConfirmPassword {
-		return errs.NewErrs(errs.ErrConfirmPasswordDiff, errors.New("两次输入的密码不相同"))
+// BuildLoginTicket 创建登录凭证
+func BuildLoginTicket(userId int) LoginTicket {
+	return LoginTicket{
+		UserId:    userId,
+		Ticket:    utils.GenUUID(),
+		ExpiredAt: time.Now().Add(24 * time.Hour),
 	}
-	if err := EmailIsExist(r.Email); err != nil {
-		return err
+}
+
+// FindLoginTicket 根据 ticket 查找登录凭证
+func FindLoginTicket(c *gin.Context, ticket string) (LoginTicket, *errs.Errs) {
+	jsonTicket := cache.RedisCli.Get(c, cache.TicketKey(ticket)).Val()
+
+	var loginTicket LoginTicket
+	err := json.Unmarshal([]byte(jsonTicket), &loginTicket)
+	if err != nil {
+		utils.Log().Error(c.FullPath(), "json convert error", err)
+		return LoginTicket{}, errs.NewErrs(errs.ErrJsonConvertError, err)
 	}
-	return nil
+
+	return loginTicket, nil
 }

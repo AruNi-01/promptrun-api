@@ -9,9 +9,7 @@ const (
 // 5 开头的五位数错误编码为服务器端错误，4 开头的五位数错误编码为客户端错误
 
 const (
-	CodeCheckLogin = 401 // CodeCheckLogin 未登录
-	CodeNoRightErr = 403 // CodeNoRightErr 未授权访问
-	CodeParamErr   = 500 // CodeParamErr 参数错误
+	ErrNotLogin = 401
 )
 
 const (

@@ -9,11 +9,14 @@ import (
 // Cors 跨域配置
 func Cors() gin.HandlerFunc {
 	config := cors.DefaultConfig()
-	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Cookie"}
+	config.AllowOrigins = []string{"http://localhost"}                                         // 允许所有域名
+	config.AllowCredentials = true                                                             // 允许携带 cookie
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} // 允许的请求方法
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Cookie"}       // 允许的请求头
+
+	// 生产环境需要配置实际的跨域域名，否则 403
 	if gin.Mode() == gin.ReleaseMode {
-		// 生产环境需要配置跨域域名，否则 403
-		config.AllowOrigins = []string{"http://www.example.com"}
+		config.AllowOrigins = []string{"https://promptrun.0x3f4.run"}
 	} else {
 		// 测试环境下模糊匹配本地开头的请求
 		config.AllowOriginFunc = func(origin string) bool {
@@ -26,6 +29,6 @@ func Cors() gin.HandlerFunc {
 			return false
 		}
 	}
-	config.AllowCredentials = true
+
 	return cors.New(config)
 }

@@ -3,6 +3,7 @@ package configs
 import (
 	"github.com/joho/godotenv"
 	"os"
+	"promptrun-api/cache"
 	"promptrun-api/model"
 	"promptrun-api/utils"
 )
@@ -18,4 +19,5 @@ func Init() {
 	if err := model.InitDB(os.Getenv("MySQL_DSN")); err != nil {
 		utils.Log().Panic("", "connect database fail", err)
 	}
+	cache.InitRedis()
 }
