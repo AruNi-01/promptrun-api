@@ -23,6 +23,8 @@ func SetupRouter() *gin.Engine {
 		prompt := rootGroup.Group("")
 		{
 			prompt.GET("/api/v1/prompt/list", api.PromptList)
+			prompt.GET("/api/v1/prompt/findById/:id", api.FindById)
+			prompt.GET("/api/v1/prompt/findFullInfoById/:id", api.FindFullInfoById)
 		}
 
 		// 需要登录拦截的路由

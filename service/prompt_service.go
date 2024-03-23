@@ -29,6 +29,13 @@ type PromptListResp struct {
 	Prompts  []model.Prompt `json:"prompts"`
 }
 
+type PromptDetailResp struct {
+	Prompt        model.Prompt      `json:"prompt"`
+	Seller        model.Seller      `json:"seller"`
+	Model         model.Model       `json:"model"`
+	PromptImgList []model.PromptImg `json:"promptImgList"`
+}
+
 // PromptList 获取提示词列表
 func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) {
 	var prompts []model.Prompt
@@ -61,4 +68,40 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 	}
 
 	return prompts, nil
+}
+
+// FindPromptFullInfoById 根据 ID 查找提示词的详细信息
+func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *errs.Errs) {
+	prompt, e := FindPromptById(promptId)
+	if e != nil {
+		return PromptDetailResp{}, e
+	}
+	seller, e := FindSellerById(prompt.SellerId)
+	if e != nil {
+		return PromptDetailResp{}, e
+	}
+	promptModel, e := FindModelById(prompt.ModelId)
+	if e != nil {
+		return PromptDetailResp{}, e
+	}
+	promptImgList, e := FindPromptImgListByPromptId(c, promptId)
+	if e != nil {
+		return PromptDetailResp{}, e
+	}
+	return PromptDetailResp{
+		Prompt:        prompt,
+		Seller:        seller,
+		Model:         promptModel,
+		PromptImgList: promptImgList,
+	}, nil
+
+}
+
+// FindPromptById 根据 ID 查找提示词
+func FindPromptById(promptId int) (model.Prompt, *errs.Errs) {
+	var prompt model.Prompt
+	if model.DB.First(&prompt, promptId).RecordNotFound() {
+		return model.Prompt{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("提示词不存在"))
+	}
+	return prompt, nil
 }

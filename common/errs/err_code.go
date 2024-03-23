@@ -14,10 +14,13 @@ const (
 
 const (
 	ErrParam = 40001 + iota
+
 	ErrConfirmPasswordDiff
 	ErrEmailExist
 	ErrUserNotExist
 	ErrWrongPassword
+
+	ErrRecordNotFound
 )
 
 const (

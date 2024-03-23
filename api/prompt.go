@@ -6,6 +6,7 @@ import (
 	"promptrun-api/common/errs"
 	"promptrun-api/service"
 	"promptrun-api/utils"
+	"strconv"
 )
 
 func PromptList(c *gin.Context) {
@@ -26,4 +27,25 @@ func PromptList(c *gin.Context) {
 			},
 		))
 	}
+}
+
+func FindById(c *gin.Context) {
+	promptId, _ := strconv.Atoi(c.Param("id"))
+	prompt, e := service.FindPromptById(promptId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(prompt))
+}
+
+func FindFullInfoById(c *gin.Context) {
+	promptId, _ := strconv.Atoi(c.Param("id"))
+	promptDetail, e := service.FindPromptFullInfoById(c, promptId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(promptDetail))
+
 }
