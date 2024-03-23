@@ -20,6 +20,11 @@ func SetupRouter() *gin.Engine {
 			passport.POST("/api/v1/passport/login", api.Login)
 		}
 
+		prompt := rootGroup.Group("")
+		{
+			prompt.GET("/api/v1/prompt/list", api.PromptList)
+		}
+
 		// 需要登录拦截的路由
 		auth := rootGroup.Group("")
 		auth.Use(middleware.LoginRequired())
