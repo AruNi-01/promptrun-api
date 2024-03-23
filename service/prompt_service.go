@@ -8,10 +8,11 @@ import (
 	"promptrun-api/utils"
 )
 
+// SortBy 前端传入的排序方式
 const (
-	SortByHot        = "hot"
-	SortByTime       = "time"
-	SortBySellAmount = "sell_amount"
+	SortByHot        = "hot"         // 按照热度
+	SortByTime       = "time"        // 按照时间
+	SortBySellAmount = "sell_amount" // 按照销量
 )
 
 // PromptListReq 获取提示词列表请求
@@ -22,6 +23,7 @@ type PromptListReq struct {
 	SortBy        string      `json:"sortBy"`
 }
 
+// PromptListResp 获取提示词列表响应
 type PromptListResp struct {
 	Paginate *utils.Page    `json:"paginate"`
 	Prompts  []model.Prompt `json:"prompts"`

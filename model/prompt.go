@@ -2,15 +2,17 @@ package model
 
 import "time"
 
+// Prompt 审核状态
 const (
-	AuditStatusNotAudit = 0
-	AuditStatusAuditing = 1
-	AuditStatusPass     = 2
+	AuditStatusNotAudit = 0 // 未审核
+	AuditStatusAuditing = 1 // 审核中
+	AuditStatusPass     = 2 // 审核通过
 )
 
+// Prompt 上下架状态
 const (
-	PublishStatusOff = 0
-	PublishStatusOn  = 1
+	PublishStatusOff = 0 // 下架
+	PublishStatusOn  = 1 // 上架
 )
 
 type Prompt struct {
