@@ -23,10 +23,15 @@ type PromptListReq struct {
 	SortBy        string      `json:"sortBy"`
 }
 
+// PromptMasterImgListReq 获取主图列表请求
+type PromptMasterImgListReq struct {
+	PromptIds []int `json:"promptIds" binding:"required"`
+}
+
 // PromptListResp 获取提示词列表响应
 type PromptListResp struct {
-	Paginate *utils.Page    `json:"paginate"`
-	Prompts  []model.Prompt `json:"prompts"`
+	Prompts []model.Prompt `json:"prompts"`
+	Rows    int            `json:"rows"`
 }
 
 type PromptDetailResp struct {
@@ -58,12 +63,13 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 		query = query.Order("create_time DESC")
 	}
 
+	// 注意：Count 要放在分页查询之前，否则会导致 count 为 空
+	query = query.Where("audit_status = ?", model.AuditStatusPass).
+		Where("publish_status = ?", model.PublishStatusOn).Count(&r.Paginate.Rows)
+
 	if query.Scopes(
 		utils.Paginate(r.Paginate)).
-		Where("audit_status = ?", model.AuditStatusPass).
-		Where("publish_status = ?", model.PublishStatusOn).
-		Find(&prompts).
-		Count(&r.Paginate.Rows).Error != nil {
+		Find(&prompts).Error != nil {
 		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
 	}
 
@@ -104,4 +110,29 @@ func FindPromptById(promptId int) (model.Prompt, *errs.Errs) {
 		return model.Prompt{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("提示词不存在"))
 	}
 	return prompt, nil
+}
+
+func FindPromptImgListByPromptId(c *gin.Context, id int) ([]model.PromptImg, *errs.Errs) {
+	var promptImgList []model.PromptImg
+	if model.DB.Where("prompt_id = ?", id).Find(&promptImgList).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取提示词图片列表失败")
+		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词图片列表失败"))
+	}
+	return promptImgList, nil
+}
+
+func FindPromptMasterImgByPromptId(promptId int) (model.PromptImg, *errs.Errs) {
+	var promptImg model.PromptImg
+	if model.DB.Where("prompt_id = ?", promptId).Where("is_master = ?", 1).First(&promptImg).RecordNotFound() {
+		return model.PromptImg{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("未找到主图"))
+	}
+	return promptImg, nil
+}
+
+func (r *PromptMasterImgListReq) FindMasterImgListByPromptIds(c *gin.Context) ([]model.PromptImg, *errs.Errs) {
+	var promptImgList []model.PromptImg
+	if model.DB.Where("prompt_id IN (?)", r.PromptIds).Where("is_master = ?", 1).Find(&promptImgList).Error != nil {
+		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取主图列表失败"))
+	}
+	return promptImgList, nil
 }

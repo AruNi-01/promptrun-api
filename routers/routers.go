@@ -22,9 +22,19 @@ func SetupRouter() *gin.Engine {
 
 		prompt := rootGroup.Group("")
 		{
-			prompt.GET("/api/v1/prompt/list", api.PromptList)
+			prompt.POST("/api/v1/prompt/list", api.PromptList)
 			prompt.GET("/api/v1/prompt/findById/:id", api.FindById)
 			prompt.GET("/api/v1/prompt/findFullInfoById/:id", api.FindFullInfoById)
+
+			prompt.GET("/api/v1/prompt/findImgListByPromptId/:id", api.FindImgListByPromptId)
+			prompt.GET("/api/v1/prompt/findMasterImgByPromptId/:id", api.FindMasterImgByPromptId)
+			prompt.POST("/api/v1/prompt/findMasterImgListByPromptIds", api.FindMasterImgListByPromptIds)
+		}
+
+		model := rootGroup.Group("")
+		{
+			model.GET("api/v1/model/list", api.ModelList)
+			model.GET("api/v1/model/findById/:id", api.FindModelById)
 		}
 
 		// 需要登录拦截的路由
