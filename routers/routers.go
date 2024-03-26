@@ -29,6 +29,8 @@ func SetupRouter() *gin.Engine {
 			prompt.GET("/api/v1/prompt/findImgListByPromptId/:id", api.FindImgListByPromptId)
 			prompt.GET("/api/v1/prompt/findMasterImgByPromptId/:id", api.FindMasterImgByPromptId)
 			prompt.POST("/api/v1/prompt/findMasterImgListByPromptIds", api.FindMasterImgListByPromptIds)
+
+			prompt.POST("/api/v1/prompt/listByBuyerId", api.FindListByBuyerId)
 		}
 
 		model := rootGroup.Group("")

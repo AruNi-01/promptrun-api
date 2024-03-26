@@ -28,6 +28,12 @@ type PromptMasterImgListReq struct {
 	PromptIds []int `json:"promptIds" binding:"required"`
 }
 
+// PromptListByBuyerIdReq 根据买家 id 获取提示词列表请求
+type PromptListByBuyerIdReq struct {
+	Paginate *utils.Page `json:"paginate"`
+	BuyerId  int         `json:"buyerId"`
+}
+
 // PromptListResp 获取提示词列表响应
 type PromptListResp struct {
 	Prompts []model.Prompt `json:"prompts"`
@@ -135,4 +141,31 @@ func (r *PromptMasterImgListReq) FindMasterImgListByPromptIds(c *gin.Context) ([
 		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取主图列表失败"))
 	}
 	return promptImgList, nil
+}
+
+func (r PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
+	orderList, err := FindOrderListByBuyerId(c, r.BuyerId)
+	if err != nil {
+		return nil, err
+	}
+
+	var promptIds = func() []int {
+		var ids []int
+		for _, order := range orderList {
+			ids = append(ids, order.PromptId)
+		}
+		return ids
+	}()
+
+	var prompts []model.Prompt
+	query := model.DB.
+		Model(model.Prompt{}).
+		Where("id in (?)", promptIds).
+		Order("create_time DESC").
+		Count(&r.Paginate.Rows)
+
+	if query.Scopes(utils.Paginate(r.Paginate)).Find(&prompts).Error != nil {
+		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
+	}
+	return prompts, nil
 }
