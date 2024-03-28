@@ -3,29 +3,36 @@ package model
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"promptrun-api/utils"
 	"time"
 )
 
 var DB *gorm.DB
 
 // InitDB 初始化数据库连接
-func InitDB(dsn string) (err error) {
-	DB, err = gorm.Open("mysql", dsn)
+func InitDB(dsn string) {
+	db, err := gorm.Open("mysql", dsn)
 	if err != nil {
-		return
+		utils.Log().Panic("", "connect database fail, errMsg: %s", err.Error())
+		panic(err)
 	}
 
 	// 日志模式: 设置为 true 打印详细日志，默认只打印 error 日志
-	DB.LogMode(true)
+	db.LogMode(true)
 	// 表名影射时使用单数
-	DB.SingularTable(true)
+	db.SingularTable(true)
 	// 连接池设置
-	DB.DB().SetMaxIdleConns(30)
-	DB.DB().SetMaxOpenConns(100)
-	DB.DB().SetConnMaxLifetime(time.Minute * 5)
+	db.DB().SetMaxIdleConns(30)
+	db.DB().SetMaxOpenConns(100)
+	db.DB().SetConnMaxLifetime(time.Minute * 5)
 
-	// 测试连通性再返回，ping 得通返回 nil，否则返回 error
-	return DB.DB().Ping()
+	// 测试连通性
+	if err := db.DB().Ping(); err != nil {
+		utils.Log().Panic("", "ping database fail, errMsg: %s", err.Error())
+		panic(err)
+	}
+
+	DB = db
 }
 
 func CloseDB() {

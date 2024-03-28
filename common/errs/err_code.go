@@ -28,4 +28,6 @@ const (
 	ErrEncryptError                    // CodeEncryptError 加密失败
 	ErrJsonConvertError                // JsonConvertError json 转换异常
 
+	ErrUploadImgToOSS // 上传图片到 OSS 失败
+
 )

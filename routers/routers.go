@@ -47,6 +47,12 @@ func SetupRouter() *gin.Engine {
 			{
 				passport2.GET("/api/v1/passport/logout", api.Logout)
 			}
+
+			user2 := auth.Group("")
+			{
+				user2.GET("api/v1/user/findById/:id", api.FindUserById)
+				user2.POST("api/v1/user/update", api.UpdateUser)
+			}
 		}
 
 	}
