@@ -4,15 +4,15 @@ import "time"
 
 // Prompt 审核状态
 const (
-	AuditStatusNotAudit = 0 // 未审核
+	AuditStatusNotAudit = 0 // 未审核（审核失败）
 	AuditStatusAuditing = 1 // 审核中
 	AuditStatusPass     = 2 // 审核通过
 )
 
 // Prompt 上下架状态
 const (
-	PublishStatusOff = 0 // 下架
-	PublishStatusOn  = 1 // 上架
+	PublishStatusOff = 0 // 下架（未发布）
+	PublishStatusOn  = 1 // 上架（已发布）
 )
 
 type Prompt struct {
@@ -29,6 +29,6 @@ type Prompt struct {
 	BrowseAmount  int       `gorm:"column:browse_amount;type:int(11);comment:浏览数量" json:"browse_amount"`
 	LikeAmount    int       `gorm:"column:like_amount;type:int(11);comment:提示词被喜欢数量" json:"like_amount"`
 	PublishStatus int       `gorm:"column:publish_status;type:int(11);comment:上架状态，0: 下架，1：上架" json:"publish_status"`
-	AuditStatus   int       `gorm:"column:audit_status;type:int(11);comment:审核状态，0：未审核，1：审核中，2：审核通过" json:"audit_status"`
+	AuditStatus   int       `gorm:"column:audit_status;type:int(11);comment:审核状态，0：审核失败，1：审核中，2：审核通过" json:"audit_status"`
 	CreateTime    time.Time `gorm:"column:create_time;type:datetime" json:"create_time"`
 }

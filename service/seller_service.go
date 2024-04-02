@@ -13,3 +13,11 @@ func FindSellerById(id int) (model.Seller, *errs.Errs) {
 	}
 	return seller, nil
 }
+
+func FindSellerByUserId(userId int) (model.Seller, *errs.Errs) {
+	var seller model.Seller
+	if model.DB.Where("user_id = ?", userId).First(&seller).RecordNotFound() {
+		return model.Seller{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("未找到该卖家"))
+	}
+	return seller, nil
+}

@@ -20,7 +20,12 @@ type PromptListReq struct {
 	Paginate      *utils.Page `json:"paginate"`
 	ModelId       *int        `json:"modelId,omitempty"`
 	CategoryTypes []int       `json:"categoryTypes,omitempty"`
-	SortBy        string      `json:"sortBy"`
+	SortBy        string      `json:"sortBy,omitempty"`
+
+	PublishStatus []int `json:"publishStatus,omitempty"`
+	AuditStatus   []int `json:"auditStatus,omitempty"`
+
+	UserId *int `json:"userId,omitempty"` // 用户 ID，用于获取某个用户（seller）发布的提示词
 }
 
 // PromptMasterImgListReq 获取主图列表请求
@@ -69,13 +74,28 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 		query = query.Order("create_time DESC")
 	}
 
-	// 注意：Count 要放在分页查询之前，否则会导致 count 为 空
-	query = query.Where("audit_status = ?", model.AuditStatusPass).
-		Where("publish_status = ?", model.PublishStatusOn).Count(&r.Paginate.Rows)
+	if r.PublishStatus != nil {
+		query = query.Where("publish_status IN (?)", r.PublishStatus)
+	}
+	if r.AuditStatus != nil {
+		query = query.Where("audit_status IN (?)", r.AuditStatus)
+	}
+
+	if r.UserId != nil {
+		seller, e := FindSellerByUserId(*r.UserId)
+		if e != nil {
+			return nil, e
+		}
+		query = query.Where("seller_id = ?", seller.Id)
+	}
+
+	// 注意：Count 要放在分页查询之前，否则会导致 count 为空
+	query.Count(&r.Paginate.Rows)
 
 	if query.Scopes(
 		utils.Paginate(r.Paginate)).
-		Find(&prompts).Error != nil {
+		Find(&prompts).
+		Error != nil {
 		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
 	}
 
