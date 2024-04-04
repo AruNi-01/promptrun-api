@@ -75,7 +75,7 @@ func (r *OrderListBySellerUserIdReq) FindOrderListAttachFullInfoBySellerUserId(c
 			model2 = model.Model{}
 		}
 
-		// 3.3 获取订单对应的提示词图片列表
+		// 3.4 获取订单对应的提示词图片列表
 		promptImgList, e := FindPromptImgListByPromptId(c, order.PromptId)
 		if e != nil {
 			promptImgList = nil
