@@ -82,7 +82,7 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 	}
 
 	if r.UserId != nil {
-		seller, e := FindSellerByUserId(*r.UserId)
+		seller, e := FindSellerByUserId(c, *r.UserId)
 		if e != nil {
 			return nil, e
 		}
@@ -104,15 +104,15 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 
 // FindPromptFullInfoById 根据 ID 查找提示词的详细信息
 func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *errs.Errs) {
-	prompt, e := FindPromptById(promptId)
+	prompt, e := FindPromptById(c, promptId)
 	if e != nil {
 		return PromptDetailResp{}, e
 	}
-	seller, e := FindSellerById(prompt.SellerId)
+	seller, e := FindSellerById(c, prompt.SellerId)
 	if e != nil {
 		return PromptDetailResp{}, e
 	}
-	promptModel, e := FindModelById(prompt.ModelId)
+	promptModel, e := FindModelById(c, prompt.ModelId)
 	if e != nil {
 		return PromptDetailResp{}, e
 	}
@@ -130,9 +130,10 @@ func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *er
 }
 
 // FindPromptById 根据 ID 查找提示词
-func FindPromptById(promptId int) (model.Prompt, *errs.Errs) {
+func FindPromptById(c *gin.Context, promptId int) (model.Prompt, *errs.Errs) {
 	var prompt model.Prompt
 	if model.DB.First(&prompt, promptId).RecordNotFound() {
+		utils.Log().Error(c.FullPath(), "提示词不存在")
 		return model.Prompt{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("提示词不存在"))
 	}
 	return prompt, nil
@@ -163,7 +164,7 @@ func (r *PromptMasterImgListReq) FindMasterImgListByPromptIds(c *gin.Context) ([
 	return promptImgList, nil
 }
 
-func (r PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
+func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
 	orderList, err := FindOrderListByBuyerId(c, r.BuyerId)
 	if err != nil {
 		return nil, err

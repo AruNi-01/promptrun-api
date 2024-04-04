@@ -22,9 +22,10 @@ type UserUpdateReq struct {
 	HeaderImgBase64 string `json:"headerImgBase64,omitempty"`
 }
 
-func FindUserById(id int) (model.User, *errs.Errs) {
+func FindUserById(c *gin.Context, id int) (model.User, *errs.Errs) {
 	var user model.User
 	if model.DB.First(&user, id).RecordNotFound() {
+		utils.Log().Error(c.FullPath(), "未找到该用户")
 		return model.User{}, errs.NewErrs(errs.ErrUserNotExist, errors.New("用户不存在"))
 	}
 	return user, nil

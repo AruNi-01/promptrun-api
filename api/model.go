@@ -18,7 +18,7 @@ func ModelList(c *gin.Context) {
 
 func FindModelById(c *gin.Context) {
 	modelId, _ := strconv.Atoi(c.Param("id"))
-	promptModel, e := service.FindModelById(modelId)
+	promptModel, e := service.FindModelById(c, modelId)
 	if e != nil {
 		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
 		return

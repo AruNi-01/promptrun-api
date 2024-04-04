@@ -31,7 +31,7 @@ func PromptList(c *gin.Context) {
 
 func FindById(c *gin.Context) {
 	promptId, _ := strconv.Atoi(c.Param("id"))
-	prompt, e := service.FindPromptById(promptId)
+	prompt, e := service.FindPromptById(c, promptId)
 	if e != nil {
 		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
 		return

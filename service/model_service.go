@@ -17,9 +17,10 @@ func ModelList(c *gin.Context) ([]model.Model, *errs.Errs) {
 	return models, nil
 }
 
-func FindModelById(id int) (model.Model, *errs.Errs) {
+func FindModelById(c *gin.Context, id int) (model.Model, *errs.Errs) {
 	var promptModel model.Model
 	if model.DB.First(&promptModel, id).RecordNotFound() {
+		utils.Log().Error(c.FullPath(), "未找到该模型")
 		return model.Model{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("未找到该模型"))
 	}
 	return promptModel, nil
