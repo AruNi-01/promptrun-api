@@ -23,6 +23,7 @@ type OrderAttachInfo struct {
 	Order         model.Order       `json:"order"`
 	Buyer         model.User        `json:"buyer"`
 	Prompt        model.Prompt      `json:"prompt"`
+	Model         model.Model       `json:"model"`
 	PromptImgList []model.PromptImg `json:"promptImgList"`
 }
 
@@ -68,6 +69,12 @@ func (r *OrderListBySellerUserIdReq) FindOrderListAttachFullInfoBySellerUserId(c
 			prompt = model.Prompt{}
 		}
 
+		// 3.3 获取订单对应的提示词模型
+		model2, e := FindModelById(c, prompt.ModelId)
+		if e != nil {
+			model2 = model.Model{}
+		}
+
 		// 3.3 获取订单对应的提示词图片列表
 		promptImgList, e := FindPromptImgListByPromptId(c, order.PromptId)
 		if e != nil {
@@ -78,6 +85,7 @@ func (r *OrderListBySellerUserIdReq) FindOrderListAttachFullInfoBySellerUserId(c
 			Order:         order,
 			Buyer:         buyer,
 			Prompt:        prompt,
+			Model:         model2,
 			PromptImgList: promptImgList,
 		})
 	}

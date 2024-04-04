@@ -125,10 +125,12 @@ func FindLoginTicket(c *gin.Context, ticket string) (LoginTicket, *errs.Errs) {
 	jsonTicket := cache.RedisCli.Get(c, cache.TicketKey(ticket)).Val()
 
 	var loginTicket LoginTicket
-	err := json.Unmarshal([]byte(jsonTicket), &loginTicket)
-	if err != nil {
-		utils.Log().Error(c.FullPath(), "json convert error", err)
-		return LoginTicket{}, errs.NewErrs(errs.ErrJsonConvertError, err)
+	if jsonTicket != "" {
+		err := json.Unmarshal([]byte(jsonTicket), &loginTicket)
+		if err != nil {
+			utils.Log().Error(c.FullPath(), "json convert error", err)
+			return LoginTicket{}, errs.NewErrs(errs.ErrJsonConvertError, err)
+		}
 	}
 
 	return loginTicket, nil
