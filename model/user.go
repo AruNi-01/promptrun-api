@@ -1,7 +1,10 @@
 package model
 
 import (
+	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
+	"promptrun-api/third_party"
+	"promptrun-api/utils"
 	"time"
 )
 
@@ -34,4 +37,17 @@ func (u *User) SetPassword(password string) error {
 func (u *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	return err == nil
+}
+
+// BeforeUpdate 更新前的钩子函数，若更新了头像，则需要删除 OSS 中的原头像
+func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
+	if u.HeaderUrl != "" {
+		var oldUser User
+		tx.First(&oldUser, u.Id)
+		if oldUser.HeaderUrl != "" {
+			utils.Log().Info("", "UserUpdate 更新了头像，执行删除 OSS 中的头像：%s", oldUser.HeaderUrl)
+			err = third_party.DeleteOSSImgByUrl(oldUser.HeaderUrl)
+		}
+	}
+	return
 }

@@ -32,7 +32,6 @@ func UploadBase64ImgToOSS(objectName, base64Img string) (string, error) {
 	content := strings.TrimPrefix(base64Img, "data:image/")
 	// 获取图片类型（后缀 png、jpeg、jpg...）
 	imgType := strings.Split(content, ";")[0]
-	utils.Log().Debug("", "imgType: %s", imgType)
 	// 去掉 base64 图片前缀（剩余）
 	content = strings.TrimPrefix(strings.Split(content, ";")[1], "base64,")
 	// 解码 base64 图片，得到 byte 数组
@@ -48,4 +47,9 @@ func UploadBase64ImgToOSS(objectName, base64Img string) (string, error) {
 	}
 
 	return "https://" + os.Getenv("OSS_BUCKET") + "." + os.Getenv("OSS_ENDPOINT") + "/" + objectName, nil
+}
+
+func DeleteOSSImgByUrl(path string) error {
+	path = strings.TrimPrefix(path, "https://"+os.Getenv("OSS_BUCKET")+"."+os.Getenv("OSS_ENDPOINT")+"/")
+	return OSS.DeleteObject(path)
 }

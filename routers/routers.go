@@ -51,6 +51,7 @@ func SetupRouter() *gin.Engine {
 			passport2 := auth.Group("")
 			{
 				passport2.GET("/api/v1/passport/logout", api.Logout)
+				passport2.POST("/api/v1/passport/updatePassword", api.UpdatePassword)
 			}
 
 			user2 := auth.Group("")
@@ -60,7 +61,8 @@ func SetupRouter() *gin.Engine {
 
 			seller2 := auth.Group("")
 			{
-				seller2.GET("api/v1/seller/infoByUserId:userId", api.FindSellerByUserId)
+				seller2.GET("api/v1/seller/findByUserId/:userId", api.FindSellerByUserId)
+				seller2.POST("api/v1/seller/update", api.UpdateSeller)
 			}
 
 			order2 := auth.Group("")

@@ -24,6 +24,13 @@ type RegisterReq struct {
 	ConfirmPassword string `form:"confirmPassword" json:"confirmPassword" binding:"required"`
 }
 
+type UpdatePasswordReq struct {
+	UserId             int    `json:"userId"`
+	OldPassword        string `json:"oldPassword"`
+	NewPassword        string `json:"newPassword"`
+	ConfirmNewPassword string `json:"confirmNewPassword"`
+}
+
 // LoginTicket 登录凭证
 type LoginTicket struct {
 	UserId    int       `json:"userId"`
@@ -82,6 +89,31 @@ func (r *LoginReq) Login(c *gin.Context) (model.User, *errs.Errs) {
 	saveCookie(c, loginTicket.Ticket, loginTicket.ExpiredAt)
 
 	return user, nil
+}
+
+// UpdatePassword 修改密码
+func (r *UpdatePasswordReq) UpdatePassword(c *gin.Context) (bool, *errs.Errs) {
+	var user model.User
+	// 不要把头像查询出来，否则会在用户更新的 GORM Hook 中删除 OSS 中的头像
+	if model.DB.Select("password").First(&user, r.UserId).RecordNotFound() {
+		utils.Log().Error(c.FullPath(), "未找到该用户")
+		return false, errs.NewErrs(errs.ErrUserNotExist, errors.New("用户不存在"))
+	}
+	if !user.CheckPassword(r.OldPassword) {
+		return false, errs.NewErrs(errs.ErrWrongPassword, errors.New("原密码不正确"))
+	}
+	if r.NewPassword != r.ConfirmNewPassword {
+		return false, errs.NewErrs(errs.ErrConfirmPasswordDiff, errors.New("两次输入的新密码不相同"))
+	}
+	if err := user.SetPassword(r.NewPassword); err != nil {
+		utils.Log().Error(c.FullPath(), "密码加密错误")
+		return false, errs.NewErrs(errs.ErrEncryptError, errors.New("密码加密失败"))
+	}
+	if err := model.DB.Model(&user).Where("id = ?", r.UserId).Update("password", user.Password).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 更新用户信息失败，errMsg: %s", err.Error())
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 更新用户信息失败"))
+	}
+	return true, nil
 }
 
 func saveCookie(c *gin.Context, ticket string, expiredAt time.Time) {

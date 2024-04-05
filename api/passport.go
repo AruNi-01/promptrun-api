@@ -51,3 +51,18 @@ func Logout(c *gin.Context) {
 
 	c.JSON(http.StatusOK, SuccessResponse(nil))
 }
+
+func UpdatePassword(c *gin.Context) {
+	var updatePasswordReq service.UpdatePasswordReq
+	if err := c.ShouldBindJSON(&updatePasswordReq); err != nil {
+		utils.Log().Error(c.FullPath(), "请求参数错误")
+		c.JSON(http.StatusBadRequest, ErrorResponse(errs.ErrParam, "请求参数错误"))
+	} else {
+		flag, e := updatePasswordReq.UpdatePassword(c)
+		if e != nil {
+			c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, SuccessResponse(flag))
+	}
+}

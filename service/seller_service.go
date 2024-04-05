@@ -8,6 +8,15 @@ import (
 	"promptrun-api/utils"
 )
 
+type SellerUpdateReq struct {
+	UserId          int    `json:"userId"`
+	Nickname        string `json:"nickname"`
+	Email           string `json:"email"`
+	HeaderImgBase64 string `json:"headerImgBase64,omitempty"`
+
+	Intro string `json:"intro"`
+}
+
 func FindSellerById(c *gin.Context, id int) (model.Seller, *errs.Errs) {
 	var seller model.Seller
 	if model.DB.First(&seller, id).RecordNotFound() {
@@ -24,4 +33,28 @@ func FindSellerByUserId(c *gin.Context, userId int) (model.Seller, *errs.Errs) {
 		return model.Seller{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("未找到该卖家"))
 	}
 	return seller, nil
+}
+
+func (r *SellerUpdateReq) UpdateSeller(c *gin.Context) (bool, *errs.Errs) {
+	updateUserReq := UserUpdateReq{
+		UserId:          r.UserId,
+		Nickname:        r.Nickname,
+		Email:           r.Email,
+		HeaderImgBase64: r.HeaderImgBase64,
+	}
+	flag, e := updateUserReq.UpdateUser(c)
+	if !flag || e != nil {
+		return false, e
+	}
+
+	seller, e := FindSellerByUserId(c, r.UserId)
+	if e != nil {
+		return false, e
+	}
+
+	if err := model.DB.Model(&seller).Where("id = ?", seller.Id).Update("intro", r.Intro).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 更新卖家信息失败，errMsg: %s", err.Error())
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 更新卖家信息失败"))
+	}
+	return true, nil
 }
