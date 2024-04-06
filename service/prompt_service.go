@@ -190,3 +190,18 @@ func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prom
 	}
 	return prompts, nil
 }
+
+func FindPromptCountBySellerId(c *gin.Context, sellerId int) (int, *errs.Errs) {
+	var count int
+	if model.DB.
+		Model(model.Prompt{}).
+		Where("seller_id = ?", sellerId).
+		Where("publish_status = ?", 1).
+		Where("audit_status = ?", 2).
+		Count(&count).
+		Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取提示词数量失败")
+		return 0, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词数量失败"))
+	}
+	return count, nil
+}

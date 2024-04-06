@@ -68,6 +68,7 @@ func SetupRouter() *gin.Engine {
 			order2 := auth.Group("")
 			{
 				order2.POST("api/v1/order/listAttachFullInfoBySellerUserId", api.OrderListAttachFullInfoBySellerUserId)
+				order2.GET("api/v1/order/findChartsFullInfoBySellerUserId/:sellerUserId", api.FindChartsFullInfoBySellerUserId)
 			}
 		}
 

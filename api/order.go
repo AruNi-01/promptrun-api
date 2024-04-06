@@ -6,6 +6,7 @@ import (
 	"promptrun-api/common/errs"
 	"promptrun-api/service"
 	"promptrun-api/utils"
+	"strconv"
 )
 
 func OrderListAttachFullInfoBySellerUserId(c *gin.Context) {
@@ -20,5 +21,16 @@ func OrderListAttachFullInfoBySellerUserId(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, SuccessResponse(orderListAttachFullInfo))
+	}
+}
+
+func FindChartsFullInfoBySellerUserId(c *gin.Context) {
+	sellerUserId, _ := strconv.Atoi(c.Param("sellerUserId"))
+	chartsRsp, e := service.FindChartsFullInfoBySellerUserId(c, sellerUserId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	} else {
+		c.JSON(http.StatusOK, SuccessResponse(chartsRsp))
 	}
 }

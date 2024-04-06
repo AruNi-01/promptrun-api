@@ -6,6 +6,7 @@ import (
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/utils"
+	"time"
 )
 
 type SellerUpdateReq struct {
@@ -57,4 +58,13 @@ func (r *SellerUpdateReq) UpdateSeller(c *gin.Context) (bool, *errs.Errs) {
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 更新卖家信息失败"))
 	}
 	return true, nil
+}
+
+func FindBecomeSellerDayBySellerId(c *gin.Context, sellerId int) (int, *errs.Errs) {
+	var seller model.Seller
+	if model.DB.First(&seller, sellerId).RecordNotFound() {
+		utils.Log().Error(c.FullPath(), "未找到该卖家")
+		return 0, errs.NewErrs(errs.ErrRecordNotFound, errors.New("未找到该卖家"))
+	}
+	return int(time.Now().Sub(seller.CreateTime).Hours() / 24), nil
 }
