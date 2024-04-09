@@ -48,6 +48,7 @@ type PromptListResp struct {
 type PromptDetailResp struct {
 	Prompt        model.Prompt      `json:"prompt"`
 	Seller        model.Seller      `json:"seller"`
+	SellerUser    model.User        `json:"sellerUser"`
 	Model         model.Model       `json:"model"`
 	PromptImgList []model.PromptImg `json:"promptImgList"`
 }
@@ -112,6 +113,10 @@ func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *er
 	if e != nil {
 		return PromptDetailResp{}, e
 	}
+	sellerUser, e := FindUserById(c, seller.UserId)
+	if e != nil {
+		return PromptDetailResp{}, e
+	}
 	promptModel, e := FindModelById(c, prompt.ModelId)
 	if e != nil {
 		return PromptDetailResp{}, e
@@ -123,6 +128,7 @@ func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *er
 	return PromptDetailResp{
 		Prompt:        prompt,
 		Seller:        seller,
+		SellerUser:    sellerUser,
 		Model:         promptModel,
 		PromptImgList: promptImgList,
 	}, nil

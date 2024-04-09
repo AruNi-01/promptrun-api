@@ -44,6 +44,11 @@ func SetupRouter() *gin.Engine {
 			model.GET("api/v1/model/findById/:id", api.FindModelById)
 		}
 
+		like := rootGroup.Group("")
+		{
+			like.GET("api/v1/likes/isLike", api.IsLike)
+		}
+
 		// 需要登录拦截的路由
 		auth := rootGroup.Group("")
 		auth.Use(middleware.LoginRequired())
@@ -69,6 +74,11 @@ func SetupRouter() *gin.Engine {
 			{
 				order2.POST("api/v1/order/listAttachFullInfoBySellerUserId", api.OrderListAttachFullInfoBySellerUserId)
 				order2.GET("api/v1/order/findChartsFullInfoBySellerUserId/:sellerUserId", api.FindChartsFullInfoBySellerUserId)
+			}
+
+			like2 := auth.Group("")
+			{
+				like2.POST("api/v1/likes/like", api.Like)
 			}
 		}
 
