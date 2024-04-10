@@ -36,6 +36,7 @@ func SetupRouter() *gin.Engine {
 			prompt.POST("/api/v1/prompt/findMasterImgListByPromptIds", api.FindMasterImgListByPromptIds)
 
 			prompt.POST("/api/v1/prompt/listByBuyerId", api.FindListByBuyerId)
+			prompt.POST("/api/v1/prompt/listBySellerId", api.FindListBySellerId)
 		}
 
 		model := rootGroup.Group("")

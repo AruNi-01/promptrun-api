@@ -39,6 +39,12 @@ type PromptListByBuyerIdReq struct {
 	BuyerId  int         `json:"buyerId"`
 }
 
+// PromptListBySellerIdReq 根据卖家 id 获取提示词列表请求
+type PromptListBySellerIdReq struct {
+	Paginate *utils.Page `json:"paginate"`
+	SellerId int         `json:"sellerId"`
+}
+
 // PromptListResp 获取提示词列表响应
 type PromptListResp struct {
 	Prompts []model.Prompt `json:"prompts"`
@@ -170,6 +176,7 @@ func (r *PromptMasterImgListReq) FindMasterImgListByPromptIds(c *gin.Context) ([
 	return promptImgList, nil
 }
 
+// FindListByBuyerId 根据买家 ID 获取该买家买入的提示词列表
 func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
 	orderList, err := FindOrderListByBuyerId(c, r.BuyerId)
 	if err != nil {
@@ -192,6 +199,25 @@ func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prom
 		Count(&r.Paginate.Rows)
 
 	if query.Scopes(utils.Paginate(r.Paginate)).Find(&prompts).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取提示词列表失败")
+		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
+	}
+	return prompts, nil
+}
+
+// FindListBySellerId 根据卖家 ID 获取该卖家发布的提示词列表
+func (r *PromptListBySellerIdReq) FindListBySellerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
+	var prompts []model.Prompt
+	query := model.DB.
+		Model(model.Prompt{}).
+		Where("seller_id = ?", r.SellerId).
+		Where("publish_status = ?", model.PublishStatusOn).
+		Where("audit_status = ?", model.AuditStatusPass).
+		Order("create_time DESC").
+		Count(&r.Paginate.Rows)
+
+	if query.Scopes(utils.Paginate(r.Paginate)).Find(&prompts).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取提示词列表失败")
 		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
 	}
 	return prompts, nil
@@ -202,8 +228,8 @@ func FindPromptCountBySellerId(c *gin.Context, sellerId int) (int, *errs.Errs) {
 	if model.DB.
 		Model(model.Prompt{}).
 		Where("seller_id = ?", sellerId).
-		Where("publish_status = ?", 1).
-		Where("audit_status = ?", 2).
+		Where("publish_status = ?", model.PublishStatusOn).
+		Where("audit_status = ?", model.AuditStatusPass).
 		Count(&count).
 		Error != nil {
 		utils.Log().Error(c.FullPath(), "DB 获取提示词数量失败")

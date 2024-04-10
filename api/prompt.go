@@ -103,3 +103,23 @@ func FindListByBuyerId(c *gin.Context) {
 		))
 	}
 }
+
+func FindListBySellerId(c *gin.Context) {
+	var promptListBySellerIdReq service.PromptListBySellerIdReq
+	if err := c.ShouldBindJSON(&promptListBySellerIdReq); err != nil {
+		utils.Log().Error(c.FullPath(), "请求参数错误")
+		c.JSON(http.StatusBadRequest, ErrorResponse(errs.ErrParam, "请求参数错误"))
+	} else {
+		prompts, e := promptListBySellerIdReq.FindListBySellerId(c)
+		if e != nil {
+			c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, SuccessResponse(
+			&service.PromptListResp{
+				Prompts: prompts,
+				Rows:    promptListBySellerIdReq.Paginate.Rows,
+			},
+		))
+	}
+}
