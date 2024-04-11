@@ -34,3 +34,13 @@ func UpdateSeller(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(nil))
 	}
 }
+
+func FindSellerById(c *gin.Context) {
+	sellerId, _ := strconv.Atoi(c.Param("id"))
+	seller, e := service.FindSellerById(c, sellerId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(seller))
+}

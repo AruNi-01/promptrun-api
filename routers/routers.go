@@ -25,6 +25,11 @@ func SetupRouter() *gin.Engine {
 			user.GET("api/v1/user/findById/:id", api.FindUserById)
 		}
 
+		seller := rootGroup.Group("")
+		{
+			seller.GET("api/v1/seller/findById/:id", api.FindSellerById)
+		}
+
 		prompt := rootGroup.Group("")
 		{
 			prompt.POST("/api/v1/prompt/list", api.PromptList)
