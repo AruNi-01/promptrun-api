@@ -21,6 +21,8 @@ const (
 	ErrWrongPassword
 
 	ErrRecordNotFound
+
+	ErrLikeIntervalTooShort
 )
 
 const (
