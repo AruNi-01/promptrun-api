@@ -3,9 +3,11 @@ package service
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/utils"
+	"time"
 )
 
 // SortBy 前端传入的排序方式
@@ -13,6 +15,14 @@ const (
 	SortByHot        = "hot"         // 按照热度
 	SortByTime       = "time"        // 按照时间
 	SortBySellAmount = "sell_amount" // 按照销量
+)
+
+var (
+	LatestBrowseAmountUpdateTime time.Time // 最近一次更新提示词浏览量的时间，防止短时间内多次更新
+)
+
+const (
+	BrowseAmountUpdateInterval = 1 * time.Second // 更新提示词浏览量的时间间隔，1s
 )
 
 // PromptListReq 获取提示词列表请求
@@ -109,8 +119,13 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 	return prompts, nil
 }
 
-// FindPromptFullInfoById 根据 ID 查找提示词的详细信息
+// FindPromptFullInfoById 根据 ID 查找提示词的详细信息（提示词详情页使用借口）
 func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *errs.Errs) {
+	// TODO: 暂时用此方法更新提示词浏览量，后续考虑使用 Redis
+	go func(promptId int) {
+		updatePromptBrowseAmountAsync(c, promptId)
+	}(promptId)
+
 	prompt, e := FindPromptById(c, promptId)
 	if e != nil {
 		return PromptDetailResp{}, e
@@ -139,6 +154,15 @@ func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *er
 		PromptImgList: promptImgList,
 	}, nil
 
+}
+
+func updatePromptBrowseAmountAsync(c *gin.Context, promptId int) {
+	if LatestBrowseAmountUpdateTime.Add(BrowseAmountUpdateInterval).Before(time.Now()) {
+		LatestBrowseAmountUpdateTime = time.Now()
+		if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("browse_amount", gorm.Expr("browse_amount + 1")).Error; err != nil {
+			utils.Log().Error(c.FullPath(), "异步更新提示词浏览量失败")
+		}
+	}
 }
 
 // FindPromptById 根据 ID 查找提示词
@@ -236,4 +260,12 @@ func FindPromptCountBySellerId(c *gin.Context, sellerId int) (int, *errs.Errs) {
 		return 0, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词数量失败"))
 	}
 	return count, nil
+}
+
+func UpdatePromptBrowseAmountById(c *gin.Context, promptId int) (bool, *errs.Errs) {
+	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("browse_amount", gorm.Expr("browse_amount + 1")).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "更新提示词浏览量失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词浏览量失败"))
+	}
+	return true, nil
 }

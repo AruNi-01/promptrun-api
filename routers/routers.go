@@ -42,6 +42,8 @@ func SetupRouter() *gin.Engine {
 
 			prompt.POST("/api/v1/prompt/listByBuyerId", api.FindListByBuyerId)
 			prompt.POST("/api/v1/prompt/listBySellerId", api.FindListBySellerId)
+
+			prompt.POST("/api/v1/prompt/updateBrowseAmountById/:id", api.UpdateBrowseAmountById)
 		}
 
 		model := rootGroup.Group("")

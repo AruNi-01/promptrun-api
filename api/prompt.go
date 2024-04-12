@@ -123,3 +123,13 @@ func FindListBySellerId(c *gin.Context) {
 		))
 	}
 }
+
+func UpdateBrowseAmountById(c *gin.Context) {
+	promptId, _ := strconv.Atoi(c.Param("id"))
+	flag, e := service.UpdatePromptBrowseAmountById(c, promptId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(flag))
+}
