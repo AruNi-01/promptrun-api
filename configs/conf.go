@@ -24,5 +24,6 @@ func Init() {
 	cache.InitRedis()
 
 	third_party.OSSInit()
+	third_party.MailInit()
 
 }

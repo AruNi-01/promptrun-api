@@ -34,3 +34,18 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(nil))
 	}
 }
+
+func UserBecomeSeller(c *gin.Context) {
+	var userBecomeSellerReq service.UserBecomeSellerReq
+	if err := c.ShouldBindJSON(&userBecomeSellerReq); err != nil {
+		utils.Log().Error(c.FullPath(), "请求参数错误")
+		c.JSON(http.StatusBadRequest, ErrorResponse(errs.ErrParam, "请求参数错误"))
+	} else {
+		_, e := userBecomeSellerReq.BecomeSeller(c)
+		if e != nil {
+			c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, SuccessResponse(nil))
+	}
+}

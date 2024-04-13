@@ -66,3 +66,8 @@ func UpdatePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(flag))
 	}
 }
+
+// CheckIsLogin 检查是否登录，Auth 中间件会拦截未登录的请求
+func CheckIsLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, SuccessResponse(nil))
+}
