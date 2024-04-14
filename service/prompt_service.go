@@ -6,7 +6,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
+	"promptrun-api/third_party"
 	"promptrun-api/utils"
+	"strconv"
 	"time"
 )
 
@@ -53,6 +55,22 @@ type PromptListByBuyerIdReq struct {
 type PromptListBySellerIdReq struct {
 	Paginate *utils.Page `json:"paginate"`
 	SellerId int         `json:"sellerId"`
+}
+
+// PromptPublishReq 发布提示词请求
+type PromptPublishReq struct {
+	UserId             int      `json:"userId"`
+	PromptTitle        string   `json:"promptTitle"`
+	PromptModelId      int      `json:"promptModelId"`
+	PromptCategoryType int      `json:"promptCategoryType"`
+	PromptIntro        string   `json:"promptIntro"`
+	PromptContent      string   `json:"promptContent"`
+	UseSuggestion      string   `json:"useSuggestion"`
+	InputExample       string   `json:"inputExample"`
+	OutputExample      string   `json:"outputExample"`
+	MasterImgBase64    string   `json:"masterImgBase64"`
+	ImgBase64List      []string `json:"imgBase64List"`
+	PromptPrice        float64  `json:"promptPrice"`
 }
 
 // PromptListResp 获取提示词列表响应
@@ -268,4 +286,88 @@ func UpdatePromptBrowseAmountById(c *gin.Context, promptId int) (bool, *errs.Err
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词浏览量失败"))
 	}
 	return true, nil
+}
+func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
+	var promptModel model.Model
+	if model.DB.First(&promptModel, r.PromptModelId).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取模型失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取模型失败"))
+	}
+	var seller model.Seller
+	if model.DB.Where("user_id = ?", r.UserId).First(&seller).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取卖家失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取卖家失败"))
+	}
+
+	switch promptModel.MediaType {
+	case model.ModelMediaTypeText:
+		return r.handleTextPromptPublish(c, seller.Id)
+	case model.ModelMediaTypeImage:
+		return r.handleImagePromptPublish(c, seller.Id)
+	case model.ModelMediaTypeVideo:
+		return r.handleVideoPromptPublish(c, seller.Id)
+	default:
+		utils.Log().Error(c.FullPath(), "模型类型错误")
+		return false, errs.NewErrs(errs.ErrParam, errors.New("模型类型错误"))
+	}
+}
+
+func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
+	prompt := model.Prompt{
+		SellerId:      sellerId,
+		Title:         r.PromptTitle,
+		ModelId:       r.PromptModelId,
+		CategoryType:  r.PromptCategoryType,
+		Intro:         r.PromptIntro,
+		Price:         r.PromptPrice,
+		AuditStatus:   model.AuditStatusPass,
+		PublishStatus: model.PublishStatusOn,
+		CreateTime:    time.Now(),
+	}
+	if err := model.DB.Create(&prompt).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 创建提示词失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词失败"))
+	}
+
+	promptImg := model.PromptImg{
+		PromptId: prompt.Id,
+		ImgUrl: func(promptId int) string {
+			objectName := third_party.OSSPrefixPromptImg + strconv.Itoa(promptId) + "-" + time.Now().Format("2006-01-02_150405")
+			headerUrl, err := third_party.UploadBase64ImgToOSS(objectName, r.MasterImgBase64)
+			if err != nil {
+				utils.Log().Error(c.FullPath(), "OSS 上传头像失败，errMsg: %s", err.Error())
+			}
+			return headerUrl
+		}(prompt.Id),
+		IsMaster: model.PromptImgIsMaster,
+	}
+	if err := model.DB.Create(&promptImg).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 创建提示词图片失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词图片失败"))
+	}
+
+	promptDetail := model.PromptDetail{
+		PromptId:      prompt.Id,
+		MediaType:     model.ModelMediaTypeText,
+		Content:       r.PromptContent,
+		UseSuggestion: r.UseSuggestion,
+		InputExample:  r.InputExample,
+		OutputExample: r.OutputExample,
+		CreateTime:    time.Now(),
+	}
+	if err := model.DB.Create(&promptDetail).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 创建提示词详情失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词详情失败"))
+	}
+	return true, nil
+}
+
+func (r *PromptPublishReq) handleImagePromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
+	// TODO: 实现图片提示词发布
+	return false, errs.NewErrs(errs.ErrParam, errors.New("暂未实现图片提示词发布"))
+}
+
+func (r *PromptPublishReq) handleVideoPromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
+	// TODO: 实现视频提示词发布
+	return false, errs.NewErrs(errs.ErrParam, errors.New("暂不支持视频提示词发布"))
 }

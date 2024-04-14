@@ -91,6 +91,11 @@ func SetupRouter() *gin.Engine {
 			{
 				like2.POST("api/v1/likes/like", api.Like)
 			}
+
+			prompt2 := auth.Group("")
+			{
+				prompt2.POST("api/v1/prompt/publish", api.PromptPublish)
+			}
 		}
 
 	}

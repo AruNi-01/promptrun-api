@@ -13,6 +13,11 @@ var (
 	OSS *oss.Bucket
 )
 
+const (
+	OSSPrefixHeaderImg = "header_img/"
+	OSSPrefixPromptImg = "prompt_img/"
+)
+
 func OSSInit() {
 	client, err := oss.New(os.Getenv("OSS_ENDPOINT"), os.Getenv("OSS_ACCESS_KEY"), os.Getenv("OSS_ACCESS_SECRET"))
 	if err != nil {

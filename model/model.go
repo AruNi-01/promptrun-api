@@ -2,9 +2,9 @@ package model
 
 // ModelMediaType 模型媒体类型
 const (
-	ModelMediaTypeText  = 0
-	ModelMediaTypeImage = 1
-	ModelMediaTypeVideo = 2
+	ModelMediaTypeText  = 1
+	ModelMediaTypeImage = 2
+	ModelMediaTypeVideo = 3
 )
 
 type Model struct {

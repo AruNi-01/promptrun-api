@@ -31,7 +31,7 @@ func SendMailForBecomeSeller(userName, email string) (bool, error) {
 	m.SetHeader("Subject", "祝贺，您已成为 PromptRun 卖家！")
 	message := `
 		<div style="display: flex; justify-content: center; margin: 35px;">
-		  <div style="width: 60%%; text-align: center; border: 2px solid #000; border-radius: 15px; padding: 20px;">
+		  <div style="width: 80%%; text-align: center; border: 2px solid #000; border-radius: 15px; padding: 20px;">
 			<h1>Hello %s. </h1>
 			<h3>感谢您的等待，非常高兴的通知您，您的申请已通过，现已成为 PromptRun 卖家中的一员，快去发布您的 Prompt 吧！</h3>
 			<h3 style="color: red; font-weight: bold;">注意：成为卖家后，您需要在 PromptRun 平台重新登录，以便获取卖家权限。</h3>

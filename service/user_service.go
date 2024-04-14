@@ -11,10 +11,6 @@ import (
 	"time"
 )
 
-const (
-	HeaderImgOSSPrefix = "header_img/"
-)
-
 type UserUpdateReq struct {
 	UserId          int    `json:"userId"`
 	Nickname        string `json:"nickname"`
@@ -47,7 +43,7 @@ func (r *UserUpdateReq) UpdateUser(c *gin.Context) (bool, *errs.Errs) {
 
 	// 头像 base64 图片上传到 OSS，返回图片地址
 	if r.HeaderImgBase64 != "" {
-		objectName := HeaderImgOSSPrefix + strconv.Itoa(r.UserId) + "-" + time.Now().Format("2006-01-02_150405")
+		objectName := third_party.OSSPrefixHeaderImg + strconv.Itoa(r.UserId) + "-" + time.Now().Format("2006-01-02_150405")
 		headerUrl, err := third_party.UploadBase64ImgToOSS(objectName, r.HeaderImgBase64)
 		if err != nil {
 			utils.Log().Error(c.FullPath(), "OSS 上传头像失败，errMsg: %s", err.Error())
