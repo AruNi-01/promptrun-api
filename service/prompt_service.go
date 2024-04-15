@@ -299,22 +299,8 @@ func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取卖家失败"))
 	}
 
-	switch promptModel.MediaType {
-	case model.ModelMediaTypeText:
-		return r.handleTextPromptPublish(c, seller.Id)
-	case model.ModelMediaTypeImage:
-		return r.handleImagePromptPublish(c, seller.Id)
-	case model.ModelMediaTypeVideo:
-		return r.handleVideoPromptPublish(c, seller.Id)
-	default:
-		utils.Log().Error(c.FullPath(), "模型类型错误")
-		return false, errs.NewErrs(errs.ErrParam, errors.New("模型类型错误"))
-	}
-}
-
-func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
 	prompt := model.Prompt{
-		SellerId:      sellerId,
+		SellerId:      seller.Id,
 		Title:         r.PromptTitle,
 		ModelId:       r.PromptModelId,
 		CategoryType:  r.PromptCategoryType,
@@ -329,16 +315,31 @@ func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, sellerId int)
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词失败"))
 	}
 
+	switch promptModel.MediaType {
+	case model.ModelMediaTypeText:
+		return r.handleTextPromptPublish(c, prompt.Id)
+	case model.ModelMediaTypeImage:
+		return r.handleImagePromptPublish(c, prompt.Id)
+	case model.ModelMediaTypeVideo:
+		return r.handleVideoPromptPublish(c, prompt.Id)
+	default:
+		utils.Log().Error(c.FullPath(), "模型类型错误")
+		return false, errs.NewErrs(errs.ErrParam, errors.New("模型类型错误"))
+	}
+}
+
+func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, promptId int) (bool, *errs.Errs) {
+
 	promptImg := model.PromptImg{
-		PromptId: prompt.Id,
+		PromptId: promptId,
 		ImgUrl: func(promptId int) string {
 			objectName := third_party.OSSPrefixPromptImg + strconv.Itoa(promptId) + "-" + time.Now().Format("2006-01-02_150405")
 			headerUrl, err := third_party.UploadBase64ImgToOSS(objectName, r.MasterImgBase64)
 			if err != nil {
-				utils.Log().Error(c.FullPath(), "OSS 上传头像失败，errMsg: %s", err.Error())
+				utils.Log().Error(c.FullPath(), "OSS 上传 Banner 图片失败，errMsg: %s", err.Error())
 			}
 			return headerUrl
-		}(prompt.Id),
+		}(promptId),
 		IsMaster: model.PromptImgIsMaster,
 	}
 	if err := model.DB.Create(&promptImg).Error; err != nil {
@@ -347,7 +348,7 @@ func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, sellerId int)
 	}
 
 	promptDetail := model.PromptDetail{
-		PromptId:      prompt.Id,
+		PromptId:      promptId,
 		MediaType:     model.ModelMediaTypeText,
 		Content:       r.PromptContent,
 		UseSuggestion: r.UseSuggestion,
@@ -362,12 +363,46 @@ func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, sellerId int)
 	return true, nil
 }
 
-func (r *PromptPublishReq) handleImagePromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
-	// TODO: 实现图片提示词发布
-	return false, errs.NewErrs(errs.ErrParam, errors.New("暂未实现图片提示词发布"))
+func (r *PromptPublishReq) handleImagePromptPublish(c *gin.Context, promptId int) (bool, *errs.Errs) {
+	promptMasterImg := model.PromptImg{
+		PromptId: promptId,
+		ImgUrl: func(promptId int) string {
+			objectName := third_party.OSSPrefixPromptImg + strconv.Itoa(promptId) + "-" + time.Now().Format("2006-01-02_150405")
+			headerUrl, err := third_party.UploadBase64ImgToOSS(objectName, r.MasterImgBase64)
+			if err != nil {
+				utils.Log().Error(c.FullPath(), "OSS 上传 Banner 图片失败，errMsg: %s", err.Error())
+			}
+			return headerUrl
+		}(promptId),
+		IsMaster: model.PromptImgIsMaster,
+	}
+	if err := model.DB.Create(&promptMasterImg).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "DB 创建提示词图片失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词图片失败"))
+	}
+
+	for _, imgBase64 := range r.ImgBase64List {
+		promptImg := model.PromptImg{
+			PromptId: promptId,
+			ImgUrl: func(promptId int) string {
+				objectName := third_party.OSSPrefixPromptImg + strconv.Itoa(promptId) + "-" + time.Now().Format("2006-01-02_150405")
+				headerUrl, err := third_party.UploadBase64ImgToOSS(objectName, imgBase64)
+				if err != nil {
+					utils.Log().Error(c.FullPath(), "OSS 上传提示词图片失败，errMsg: %s", err.Error())
+				}
+				return headerUrl
+			}(promptId),
+			IsMaster: model.PromptImgNotMaster,
+		}
+		if err := model.DB.Create(&promptImg).Error; err != nil {
+			utils.Log().Error(c.FullPath(), "DB 创建提示词图片失败")
+			return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词图片失败"))
+		}
+	}
+	return true, nil
 }
 
-func (r *PromptPublishReq) handleVideoPromptPublish(c *gin.Context, sellerId int) (bool, *errs.Errs) {
+func (r *PromptPublishReq) handleVideoPromptPublish(c *gin.Context, promptId int) (bool, *errs.Errs) {
 	// TODO: 实现视频提示词发布
 	return false, errs.NewErrs(errs.ErrParam, errors.New("暂不支持视频提示词发布"))
 }
