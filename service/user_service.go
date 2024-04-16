@@ -64,6 +64,7 @@ func (r *UserBecomeSellerReq) BecomeSeller(c *gin.Context) (bool, *errs.Errs) {
 	seller := model.Seller{
 		UserId:     r.UserId,
 		Intro:      r.Intro,
+		Rating:     model.Ratting5, // 默认 5 星
 		Status:     model.SellerStatusEnable,
 		CreateTime: time.Now(),
 	}
