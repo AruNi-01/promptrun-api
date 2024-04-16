@@ -15,6 +15,15 @@ const (
 	PublishStatusOn  = 1 // 上架（已发布）
 )
 
+const (
+	Ratting5 = 5.0 // 评分：5.0
+	Ratting4 = 4.0 // 评分：4.0
+	Ratting3 = 3.0 // 评分：3.0
+	Ratting2 = 2.0 // 评分：2.0
+	Ratting1 = 1.0 // 评分：1.0
+	Ratting0 = 0.0 // 评分：0.0
+)
+
 type Prompt struct {
 	Id            int       `gorm:"column:id;type:int(11);primary_key;AUTO_INCREMENT" json:"id"`
 	SellerId      int       `gorm:"column:seller_id;type:int(11);comment:卖家 id，逻辑关联到卖家表" json:"seller_id"`
