@@ -407,3 +407,11 @@ func (r *PromptPublishReq) handleVideoPromptPublish(c *gin.Context, promptId int
 	// TODO: 实现视频提示词发布
 	return false, errs.NewErrs(errs.ErrParam, errors.New("暂不支持视频提示词发布"))
 }
+
+func UpdatePromptPublishStatusById(c *gin.Context, promptId int, status int) (bool, *errs.Errs) {
+	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("publish_status", status).Error; err != nil {
+		utils.Log().Error(c.FullPath(), "更新提示词发布状态失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词发布状态失败"))
+	}
+	return true, nil
+}

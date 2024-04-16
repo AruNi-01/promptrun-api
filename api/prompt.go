@@ -148,3 +148,14 @@ func PromptPublish(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(flag))
 	}
 }
+
+func UpdatePublishStatusById(c *gin.Context) {
+	promptId, _ := strconv.Atoi(c.Query("promptId"))
+	newPublishStatus, _ := strconv.Atoi(c.Query("newPublishStatus"))
+	flag, e := service.UpdatePromptPublishStatusById(c, promptId, newPublishStatus)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(flag))
+}

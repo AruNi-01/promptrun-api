@@ -95,6 +95,7 @@ func SetupRouter() *gin.Engine {
 			prompt2 := auth.Group("")
 			{
 				prompt2.POST("api/v1/prompt/publish", api.PromptPublish)
+				prompt2.POST("api/v1/prompt/updatePublishStatusById", api.UpdatePublishStatusById)
 			}
 		}
 
