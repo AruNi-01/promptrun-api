@@ -31,6 +31,8 @@ type Prompt struct {
 	CategoryType  int       `gorm:"column:category_type;type:int(11);comment:分类类型，具体枚举看文档" json:"category_type"`
 	Title         string    `gorm:"column:title;type:varchar(255);comment:提示词标题" json:"title"`
 	Intro         string    `gorm:"column:intro;type:varchar(255);comment:提示词介绍" json:"intro"`
+	InputExample  string    `gorm:"column:input_example;type:text;comment:Prompt 输入示例（文本类模型媒体）" json:"input_example"`
+	OutputExample string    `gorm:"column:output_example;type:text;comment:Prompt 输出示例（文本类模型媒体）" json:"output_example"`
 	Price         float64   `gorm:"column:price;type:decimal(10,2);comment:价格" json:"price"`
 	Rating        float64   `gorm:"column:rating;type:float(2,1);comment:评分，1.0-5.0" json:"rating"`
 	Score         float64   `gorm:"column:score;type:double;comment:分数，热度排行使用" json:"score"`

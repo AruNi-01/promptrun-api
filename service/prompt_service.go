@@ -305,6 +305,8 @@ func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
 		ModelId:       r.PromptModelId,
 		CategoryType:  r.PromptCategoryType,
 		Intro:         r.PromptIntro,
+		InputExample:  r.InputExample,
+		OutputExample: r.OutputExample,
 		Rating:        model.Ratting5, // 默认评分为 5.0，后续根据有买家评分时再根据评分计算
 		Price:         r.PromptPrice,
 		AuditStatus:   model.AuditStatusPass,
@@ -330,7 +332,6 @@ func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
 }
 
 func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, promptId int) (bool, *errs.Errs) {
-
 	promptImg := model.PromptImg{
 		PromptId: promptId,
 		ImgUrl: func(promptId int) string {
@@ -353,8 +354,6 @@ func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, promptId int)
 		MediaType:     model.ModelMediaTypeText,
 		Content:       r.PromptContent,
 		UseSuggestion: r.UseSuggestion,
-		InputExample:  r.InputExample,
-		OutputExample: r.OutputExample,
 		CreateTime:    time.Now(),
 	}
 	if err := model.DB.Create(&promptDetail).Error; err != nil {
