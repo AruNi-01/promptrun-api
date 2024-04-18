@@ -84,21 +84,22 @@ func FindMasterImgListByPromptIds(c *gin.Context) {
 	}
 }
 
+// FindListByBuyerId 根据买家 ID 查询买家的所有提示词（携带订单 ID，方便查询订单详情）
 func FindListByBuyerId(c *gin.Context) {
 	var promptListByBuyerIdReq service.PromptListByBuyerIdReq
 	if err := c.ShouldBindJSON(&promptListByBuyerIdReq); err != nil {
 		utils.Log().Error(c.FullPath(), "请求参数错误")
 		c.JSON(http.StatusBadRequest, ErrorResponse(errs.ErrParam, "请求参数错误"))
 	} else {
-		prompts, e := promptListByBuyerIdReq.FindListByBuyerId(c)
+		promptAttachOrderIdList, e := promptListByBuyerIdReq.FindListByBuyerId(c)
 		if e != nil {
 			c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
 			return
 		}
 		c.JSON(http.StatusOK, SuccessResponse(
-			&service.PromptListResp{
-				Prompts: prompts,
-				Rows:    promptListByBuyerIdReq.Paginate.Rows,
+			&service.PromptAttachOrderIdListResp{
+				PromptAttachOrderIdList: promptAttachOrderIdList,
+				Rows:                    promptListByBuyerIdReq.Paginate.Rows,
 			},
 		))
 	}

@@ -79,6 +79,16 @@ type PromptListResp struct {
 	Rows    int            `json:"rows"`
 }
 
+// PromptAttachOrderIdListResp 查询买家购买的提示词列表，携带订单 ID，用于通过提示词列表查询订单详情
+type PromptAttachOrderIdListResp struct {
+	PromptAttachOrderIdList []PromptAttachOrderId `json:"promptAttachOrderIdList"`
+	Rows                    int                   `json:"rows"`
+}
+type PromptAttachOrderId struct {
+	Prompt  model.Prompt `json:"prompt"`
+	OrderId int          `json:"orderId"`
+}
+
 type PromptDetailResp struct {
 	Prompt        model.Prompt      `json:"prompt"`
 	Seller        model.Seller      `json:"seller"`
@@ -219,19 +229,18 @@ func (r *PromptMasterImgListReq) FindMasterImgListByPromptIds(c *gin.Context) ([
 }
 
 // FindListByBuyerId 根据买家 ID 获取该买家买入的提示词列表
-func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prompt, *errs.Errs) {
+func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]PromptAttachOrderId, *errs.Errs) {
 	orderList, err := FindOrderListByBuyerId(c, r.BuyerId)
 	if err != nil {
 		return nil, err
 	}
 
-	var promptIds = func() []int {
-		var ids []int
-		for _, order := range orderList {
-			ids = append(ids, order.PromptId)
-		}
-		return ids
-	}()
+	var promptIds []int
+	promptOrderMap := make(map[int]int)
+	for _, order := range orderList {
+		promptOrderMap[order.PromptId] = order.Id
+		promptIds = append(promptIds, order.PromptId)
+	}
 
 	var prompts []model.Prompt
 	query := model.DB.
@@ -244,7 +253,16 @@ func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]model.Prom
 		utils.Log().Error(c.FullPath(), "DB 获取提示词列表失败")
 		return nil, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取提示词列表失败"))
 	}
-	return prompts, nil
+
+	var promptsAttachOrderIdList []PromptAttachOrderId
+	for _, prompt := range prompts {
+		promptsAttachOrderIdList = append(promptsAttachOrderIdList, PromptAttachOrderId{
+			Prompt:  prompt,
+			OrderId: promptOrderMap[prompt.Id],
+		})
+	}
+
+	return promptsAttachOrderIdList, nil
 }
 
 // FindListBySellerId 根据卖家 ID 获取该卖家发布的提示词列表

@@ -53,6 +53,12 @@ type SellModelRatioVo struct {
 	SellCount int    `json:"sellCount"`
 }
 
+type OrderListAttachPromptDetailRsp struct {
+	Order        model.Order        `json:"order"`
+	Prompt       model.Prompt       `json:"prompt"`
+	PromptDetail model.PromptDetail `json:"promptDetail"`
+}
+
 func FindOrderListByBuyerId(c *gin.Context, buyerId int) ([]model.Order, *errs.Errs) {
 	var orders []model.Order
 	if model.DB.Where("buyer_id = ?", buyerId).Find(&orders).Error != nil {
@@ -289,4 +295,36 @@ func findSellMoneyEveryMonth(c *gin.Context, sellId int) ([]SellMoneyVo, *errs.E
 	}
 	slices.Reverse(sellMoneyEveryMonth)
 	return sellMoneyEveryMonth, nil
+}
+
+func FindOrderListAttachPromptDetailById(c *gin.Context, orderId int) (OrderListAttachPromptDetailRsp, *errs.Errs) {
+	order, e := FindOrderById(c, orderId)
+	if e != nil {
+		return OrderListAttachPromptDetailRsp{}, e
+	}
+
+	prompt, e := FindPromptById(c, order.PromptId)
+	if e != nil {
+		return OrderListAttachPromptDetailRsp{}, e
+	}
+
+	promptDetail, e := FindPromptDetailByPromptId(c, prompt.Id)
+	if e != nil {
+		return OrderListAttachPromptDetailRsp{}, e
+	}
+
+	return OrderListAttachPromptDetailRsp{
+		Order:        order,
+		Prompt:       prompt,
+		PromptDetail: promptDetail,
+	}, nil
+}
+
+func FindOrderById(c *gin.Context, orderId int) (model.Order, *errs.Errs) {
+	var order model.Order
+	if model.DB.Where("id = ?", orderId).First(&order).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取订单失败")
+		return model.Order{}, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取订单失败"))
+	}
+	return order, nil
 }

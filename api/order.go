@@ -34,3 +34,14 @@ func FindChartsFullInfoBySellerUserId(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(chartsRsp))
 	}
 }
+
+func OrderListAttachPromptDetailById(c *gin.Context) {
+	orderId, _ := strconv.Atoi(c.Param("orderId"))
+	orderAttachPromptDetail, e := service.FindOrderListAttachPromptDetailById(c, orderId)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	} else {
+		c.JSON(http.StatusOK, SuccessResponse(orderAttachPromptDetail))
+	}
+}
