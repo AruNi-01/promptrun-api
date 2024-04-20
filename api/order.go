@@ -45,3 +45,15 @@ func OrderListAttachPromptDetailById(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(orderAttachPromptDetail))
 	}
 }
+
+func OrderRatingById(c *gin.Context) {
+	orderId, _ := strconv.Atoi(c.Query("orderId"))
+	rating, _ := strconv.ParseFloat(c.Query("rating"), 64)
+	order, e := service.OrderRatingById(c, orderId, rating)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	} else {
+		c.JSON(http.StatusOK, SuccessResponse(order))
+	}
+}

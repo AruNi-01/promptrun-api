@@ -2,6 +2,13 @@ package model
 
 import "time"
 
+const (
+	// OrderRatingNotYet 买家个人是否已进行评分，0：否
+	OrderRatingNotYet = 0
+	// OrderRatingDone 买家个人是否已进行评分，1：是
+	OrderRatingDone = 1
+)
+
 type Order struct {
 	Id         int       `gorm:"column:id;type:int(11);primary_key;AUTO_INCREMENT" json:"id"`
 	PromptId   int       `gorm:"column:prompt_id;type:int(11);comment:购买的提示词 id" json:"prompt_id"`

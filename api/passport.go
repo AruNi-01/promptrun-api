@@ -3,9 +3,9 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"promptrun-api/cache"
 	"promptrun-api/common/errs"
 	"promptrun-api/service"
+	cache2 "promptrun-api/third_party/cache"
 	"promptrun-api/utils"
 )
 
@@ -46,8 +46,8 @@ func Logout(c *gin.Context) {
 		c.JSON(http.StatusOK, ErrorResponse(errs.ErrNotLogin, "您未登录，请登录后再操作"))
 		return
 	}
-	ticketKey := cache.TicketKey(ticket)
-	cache.RedisCli.Del(c, ticketKey)
+	ticketKey := cache2.TicketKey(ticket)
+	cache2.RedisCli.Del(c, ticketKey)
 
 	c.JSON(http.StatusOK, SuccessResponse(nil))
 }

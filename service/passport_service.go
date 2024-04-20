@@ -5,9 +5,9 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"os"
-	"promptrun-api/cache"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
+	cache2 "promptrun-api/third_party/cache"
 	"promptrun-api/utils"
 	"time"
 )
@@ -82,8 +82,8 @@ func (r *LoginReq) Login(c *gin.Context) (model.User, *errs.Errs) {
 		utils.Log().Error(c.FullPath(), "json convert error", err)
 		return model.User{}, errs.NewErrs(errs.ErrJsonConvertError, err)
 	}
-	ticketKey := cache.TicketKey(loginTicket.Ticket)
-	cache.RedisCli.Set(c, ticketKey, jsonTicket, time.Until(loginTicket.ExpiredAt))
+	ticketKey := cache2.TicketKey(loginTicket.Ticket)
+	cache2.RedisCli.Set(c, ticketKey, jsonTicket, time.Until(loginTicket.ExpiredAt))
 
 	// 设置 Cookie，后续请求携带 Cookie，实现登录状态保持
 	saveCookie(c, loginTicket.Ticket, loginTicket.ExpiredAt)
@@ -148,13 +148,13 @@ func BuildLoginTicket(userId int) LoginTicket {
 	return LoginTicket{
 		UserId:    userId,
 		Ticket:    utils.GenUUID(),
-		ExpiredAt: time.Now().Add(24 * time.Hour),
+		ExpiredAt: time.Now().Add(3 * 24 * time.Hour),
 	}
 }
 
 // FindLoginTicket 根据 ticket 查找登录凭证
 func FindLoginTicket(c *gin.Context, ticket string) (LoginTicket, *errs.Errs) {
-	jsonTicket := cache.RedisCli.Get(c, cache.TicketKey(ticket)).Val()
+	jsonTicket := cache2.RedisCli.Get(c, cache2.TicketKey(ticket)).Val()
 
 	var loginTicket LoginTicket
 	if jsonTicket != "" {

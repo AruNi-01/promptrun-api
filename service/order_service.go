@@ -328,3 +328,27 @@ func FindOrderById(c *gin.Context, orderId int) (model.Order, *errs.Errs) {
 	}
 	return order, nil
 }
+
+func OrderRatingById(c *gin.Context, orderId int, rating float64) (model.Order, *errs.Errs) {
+	var order model.Order
+	if model.DB.Where("id = ?", orderId).First(&order).Error != nil {
+		utils.Log().Error(c.FullPath(), "DB 获取订单失败")
+		return model.Order{}, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取订单失败"))
+	}
+	order.IsRating = model.OrderRatingDone
+	order.Rating = rating
+
+	if e := model.DB.Save(&order).Error; e != nil {
+		utils.Log().Error(c.FullPath(), "DB 评价订单失败")
+		return model.Order{}, errs.NewErrs(errs.ErrDBError, errors.New("DB 评价订单失败"))
+	}
+
+	// TODO：异步插入订单评分表，后续在低峰期使用定时任务扫描评分表，计算卖家和 Prompt 平均评分
+	go func() {
+		if _, e := AddOrderRating(c, order, rating); e != nil {
+			utils.Log().Error(c.FullPath(), "异步插入订单评分表失败")
+		}
+	}()
+
+	return order, nil
+}

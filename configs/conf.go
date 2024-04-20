@@ -3,9 +3,9 @@ package configs
 import (
 	"github.com/joho/godotenv"
 	"os"
-	"promptrun-api/cache"
 	"promptrun-api/model"
 	"promptrun-api/third_party"
+	"promptrun-api/third_party/cache"
 	"promptrun-api/utils"
 )
 
