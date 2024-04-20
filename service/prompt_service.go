@@ -86,7 +86,7 @@ type PromptAttachOrderIdListResp struct {
 }
 type PromptAttachOrderId struct {
 	Prompt  model.Prompt `json:"prompt"`
-	OrderId int          `json:"orderId"`
+	OrderId int64        `json:"orderId"`
 }
 
 type PromptDetailResp struct {
@@ -236,7 +236,7 @@ func (r *PromptListByBuyerIdReq) FindListByBuyerId(c *gin.Context) ([]PromptAtta
 	}
 
 	var promptIds []int
-	promptOrderMap := make(map[int]int)
+	promptOrderMap := make(map[int]int64)
 	for _, order := range orderList {
 		promptOrderMap[order.PromptId] = order.Id
 		promptIds = append(promptIds, order.PromptId)

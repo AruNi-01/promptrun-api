@@ -8,12 +8,22 @@ import (
 	"promptrun-api/model"
 	"promptrun-api/utils"
 	"slices"
+	"time"
 )
 
 // OrderListBySellerUserIdReq 根据卖家 userId 获取订单列表请求
 type OrderListBySellerUserIdReq struct {
 	Paginate     *utils.Page `json:"paginate"`
 	SellerUserId int         `json:"sellerUserId"`
+}
+
+type CreateOrderReq struct {
+	Id         int64     `json:"id"`
+	PromptId   int       `json:"promptId"`
+	SellerId   int       `json:"sellerId"`
+	BuyerId    int       `json:"buyerId"`
+	Price      float64   `json:"price"`
+	CreateTime time.Time `json:"createTime"`
 }
 
 type OrderListAttachFullInfoRsp struct {
@@ -297,7 +307,7 @@ func findSellMoneyEveryMonth(c *gin.Context, sellId int) ([]SellMoneyVo, *errs.E
 	return sellMoneyEveryMonth, nil
 }
 
-func FindOrderListAttachPromptDetailById(c *gin.Context, orderId int) (OrderListAttachPromptDetailRsp, *errs.Errs) {
+func FindOrderListAttachPromptDetailById(c *gin.Context, orderId int64) (OrderListAttachPromptDetailRsp, *errs.Errs) {
 	order, e := FindOrderById(c, orderId)
 	if e != nil {
 		return OrderListAttachPromptDetailRsp{}, e
@@ -320,7 +330,7 @@ func FindOrderListAttachPromptDetailById(c *gin.Context, orderId int) (OrderList
 	}, nil
 }
 
-func FindOrderById(c *gin.Context, orderId int) (model.Order, *errs.Errs) {
+func FindOrderById(c *gin.Context, orderId int64) (model.Order, *errs.Errs) {
 	var order model.Order
 	if model.DB.Where("id = ?", orderId).First(&order).Error != nil {
 		utils.Log().Error(c.FullPath(), "DB 获取订单失败")
@@ -351,4 +361,21 @@ func OrderRatingById(c *gin.Context, orderId int, rating float64) (model.Order, 
 	}()
 
 	return order, nil
+}
+
+func (r *CreateOrderReq) CreateOrder(c *gin.Context) (bool, *errs.Errs) {
+	order := model.Order{
+		Id:         r.Id,
+		PromptId:   r.PromptId,
+		SellerId:   r.SellerId,
+		BuyerId:    r.BuyerId,
+		Price:      r.Price,
+		CreateTime: r.CreateTime,
+	}
+
+	if e := model.DB.Create(&order).Error; e != nil {
+		utils.Log().Error(c.FullPath(), "DB 创建订单失败, err: %s", e.Error())
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建订单失败"))
+	}
+	return true, nil
 }

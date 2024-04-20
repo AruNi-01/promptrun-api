@@ -32,4 +32,6 @@ const (
 
 	ErrUploadImgToOSS // 上传图片到 OSS 失败
 
+	ErrPayFacadeError // 支付接口调用失败
+
 )

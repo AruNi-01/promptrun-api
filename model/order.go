@@ -10,7 +10,7 @@ const (
 )
 
 type Order struct {
-	Id         int       `gorm:"column:id;type:int(11);primary_key;AUTO_INCREMENT" json:"id"`
+	Id         int64     `gorm:"column:id;type:bigint;primary_key;AUTO_INCREMENT" json:"id"`
 	PromptId   int       `gorm:"column:prompt_id;type:int(11);comment:购买的提示词 id" json:"prompt_id"`
 	SellerId   int       `gorm:"column:seller_id;type:int(11);comment:提示词所属的卖家 id" json:"seller_id"`
 	BuyerId    int       `gorm:"column:buyer_id;type:int(11);comment:购买提示词的买家 id（等于 user_id）" json:"buyer_id"`

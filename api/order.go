@@ -36,7 +36,7 @@ func FindChartsFullInfoBySellerUserId(c *gin.Context) {
 }
 
 func OrderListAttachPromptDetailById(c *gin.Context) {
-	orderId, _ := strconv.Atoi(c.Param("orderId"))
+	orderId, _ := strconv.ParseInt(c.Param("orderId"), 10, 64)
 	orderAttachPromptDetail, e := service.FindOrderListAttachPromptDetailById(c, orderId)
 	if e != nil {
 		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
@@ -50,6 +50,17 @@ func OrderRatingById(c *gin.Context) {
 	orderId, _ := strconv.Atoi(c.Query("orderId"))
 	rating, _ := strconv.ParseFloat(c.Query("rating"), 64)
 	order, e := service.OrderRatingById(c, orderId, rating)
+	if e != nil {
+		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+		return
+	} else {
+		c.JSON(http.StatusOK, SuccessResponse(order))
+	}
+}
+
+func FindOrderById(c *gin.Context) {
+	orderId, _ := strconv.ParseInt(c.Param("orderId"), 10, 64)
+	order, e := service.FindOrderById(c, orderId)
 	if e != nil {
 		c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
 		return

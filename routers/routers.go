@@ -57,6 +57,16 @@ func SetupRouter() *gin.Engine {
 			like.GET("api/v1/likes/isLike", api.IsLike)
 		}
 
+		order := rootGroup.Group("")
+		{
+			order.GET("api/v1/order/findById/:orderId", api.FindOrderById)
+		}
+
+		pay := rootGroup.Group("")
+		{
+			pay.GET("api/v1/pay/lantuWxPayNotify", api.LantuWxPayNotify)
+		}
+
 		// 需要登录拦截的路由
 		auth := rootGroup.Group("")
 		auth.Use(middleware.LoginRequired())
@@ -98,6 +108,11 @@ func SetupRouter() *gin.Engine {
 			{
 				prompt2.POST("api/v1/prompt/publish", api.PromptPublish)
 				prompt2.POST("api/v1/prompt/updatePublishStatusById", api.UpdatePublishStatusById)
+			}
+
+			pay2 := rootGroup.Group("")
+			{
+				pay2.POST("api/v1/pay/lantuWxPay", api.LantuWxPay)
 			}
 		}
 

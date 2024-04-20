@@ -30,3 +30,9 @@ func TestColor(t *testing.T) {
 	c := color.New(color.FgCyan).Add(color.Underline)
 	c.Println("Prints cyan text with an underline.")
 }
+
+func TestGenSnowflakeId(t *testing.T) {
+	// 测试生成的唯一 ID 是否为 64bit
+	id := utils.GenSnowflakeId()
+	fmt.Println(id)
+}
