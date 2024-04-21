@@ -103,16 +103,21 @@ func (r *LantuWxPayNotifyParams) LantuWxPayNotify(c *gin.Context) (bool, *errs.E
 		return false, nil
 	}
 
+	// 若订单已创建（查询蓝兔支付订单接口逻辑 LantuWxPayQueryOrder），则直接返回
+	orderId, err := strconv.ParseInt(r.OutTradeNo, 10, 64)
+	if err != nil {
+		utils.Log().Error(c.FullPath(), "strconv.Atoi error: %s", err.Error())
+		return false, nil
+	}
+	order, e := FindOrderById(c, orderId)
+	// 订单已存在，直接返回
+	if order.Id != 0 {
+		return false, e
+	}
+
 	// 支付成功，创建订单
 	createOrderReq := CreateOrderReq{
-		Id: func(c *gin.Context, r *LantuWxPayNotifyParams) int64 {
-			id, err := strconv.ParseInt(r.OutTradeNo, 10, 64)
-			if err != nil {
-				utils.Log().Error(c.FullPath(), "strconv.Atoi error: %s", err.Error())
-				return utils.GenSnowflakeId()
-			}
-			return id
-		}(c, r),
+		Id:       orderId,
 		PromptId: orderInfo.PromptId,
 		SellerId: orderInfo.SellerId,
 		BuyerId:  orderInfo.BuyerId,
@@ -126,7 +131,7 @@ func (r *LantuWxPayNotifyParams) LantuWxPayNotify(c *gin.Context) (bool, *errs.E
 			return time.Unix(timestampInt, 0)
 		}(c, r),
 	}
-	_, e := createOrderReq.CreateOrder(c)
+	_, e = createOrderReq.CreateOrder(c)
 	if e != nil {
 		return false, e
 	}

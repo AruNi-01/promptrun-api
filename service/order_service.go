@@ -332,7 +332,11 @@ func FindOrderListAttachPromptDetailById(c *gin.Context, orderId int64) (OrderLi
 
 func FindOrderById(c *gin.Context, orderId int64) (model.Order, *errs.Errs) {
 	var order model.Order
-	if model.DB.Where("id = ?", orderId).First(&order).Error != nil {
+	if err := model.DB.Where("id = ?", orderId).First(&order).Error; err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			utils.Log().Error(c.FullPath(), "DB 订单不存在")
+			return model.Order{}, errs.NewErrs(errs.ErrRecordNotFound, errors.New("DB 订单不存在"))
+		}
 		utils.Log().Error(c.FullPath(), "DB 获取订单失败")
 		return model.Order{}, errs.NewErrs(errs.ErrDBError, errors.New("DB 获取订单失败"))
 	}
