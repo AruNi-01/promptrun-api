@@ -61,7 +61,6 @@ type LantuWxPayNotifyParams struct {
 // LantuWxPay 蓝兔微信支付接口，返回支付二维码
 func (r *LantuWxPayReq) LantuWxPay(c *gin.Context) (LantuWxPayResp, *errs.Errs) {
 	orderId := utils.GenSnowflakeId()
-	fmt.Println("orderId:", orderId)
 
 	lantuWxPayReq := lantu_pay.LantuWxPayReq{
 		OrderId:   strconv.FormatInt(orderId, 10),
