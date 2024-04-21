@@ -26,9 +26,20 @@ type LantuWxPayReq struct {
 	Price       float64 `json:"price"`
 }
 
+type LantuWxPayQueryOrderReq struct {
+	OrderId int64 `json:"orderId"` // 订单 id，从业务传入，跟 order 表的 id 保持一致
+}
+
 type LantuWxPayResp struct {
 	QRCodeURL string `json:"qrCodeUrl"`
 	OrderId   int64  `json:"orderId"`
+}
+
+type LantuWxPayQueryOrderResp struct {
+	IsPay   bool          `json:"isPay"`   // 是否已支付
+	OrderId int64         `json:"orderId"` // 订单 id，从业务传入，跟 order 表的 id 保持一致
+	PayTime time.Time     `json:"payTime"` // 支付时间
+	Attach  LantuWxPayReq `json:"attach"`  // 附加数据，在支付接口中填写的数据，可作为自定义参数使用。
 }
 
 type LantuWxPayNotifyParams struct {
@@ -79,6 +90,7 @@ func (r *LantuWxPayReq) LantuWxPay(c *gin.Context) (LantuWxPayResp, *errs.Errs) 
 	}, nil
 }
 
+// LantuWxPayNotify 蓝兔微信支付回调通知
 func (r *LantuWxPayNotifyParams) LantuWxPayNotify(c *gin.Context) (bool, *errs.Errs) {
 	if r.Code != LantuWxPayNotifySuccess {
 		utils.Log().Info(c.FullPath(), "蓝兔微信支付回调通知结果：支付失败")
@@ -120,4 +132,61 @@ func (r *LantuWxPayNotifyParams) LantuWxPayNotify(c *gin.Context) (bool, *errs.E
 		return false, e
 	}
 	return true, nil
+}
+
+// LantuWxPayQueryOrder 蓝兔支付订单查询接口
+func (r *LantuWxPayQueryOrderReq) LantuWxPayQueryOrder(c *gin.Context) (LantuWxPayQueryOrderResp, *errs.Errs) {
+	lantuWxPayQueryOrderReq := lantu_pay.LantuWxPayQueryOrderReq{
+		OrderId: strconv.FormatInt(r.OrderId, 10),
+	}
+
+	// 调用蓝兔支付订单查询接口，获取订单信息
+	resp, err := lantuWxPayQueryOrderReq.LantuWxPayQueryOrder()
+	if err != nil {
+		utils.Log().Error("", "lantuWxPayQueryOrderReq.LantuWxPayQueryOrder error: %s", err.Error())
+		return LantuWxPayQueryOrderResp{}, errs.NewErrs(errs.ErrPayOrderQueryError, errors.New("调用蓝兔支付订单查询接口失败"))
+	}
+	lantuWxPayQueryOrderResp := LantuWxPayQueryOrderResp{
+		IsPay:   resp.Data.PayStatus == lantu_pay.PayStatusPaid,
+		OrderId: r.OrderId,
+		PayTime: func(payTime string) time.Time {
+			if payTime == "" {
+				return time.Now()
+			}
+			timestampInt, err := strconv.ParseInt(payTime, 10, 64)
+			if err != nil {
+				utils.Log().Error("", "strconv.Atoi error: %s", err.Error())
+				return time.Now()
+			}
+			return time.Unix(timestampInt, 0)
+		}(resp.Data.SuccessTime),
+		Attach: func(c *gin.Context, attach string) LantuWxPayReq {
+			orderInfo := LantuWxPayReq{}
+			if err := json.Unmarshal([]byte(attach), &orderInfo); err != nil {
+				utils.Log().Error(c.FullPath(), "json.Unmarshal error: %s", err.Error())
+			}
+			return orderInfo
+		}(c, resp.Data.Attach),
+	}
+
+	// 支付成功，异步创建订单，TODO：对于创建失败的订单，可以通过订单查询接口再次创建来补偿
+	if lantuWxPayQueryOrderResp.IsPay {
+		go func(c *gin.Context, r LantuWxPayQueryOrderResp) {
+			// 从附加数据中获取订单信息
+			createOrderReq := CreateOrderReq{
+				Id:         r.OrderId,
+				PromptId:   r.Attach.PromptId,
+				SellerId:   r.Attach.SellerId,
+				BuyerId:    r.Attach.BuyerId,
+				Price:      r.Attach.Price,
+				CreateTime: r.PayTime,
+			}
+			_, e := createOrderReq.CreateOrder(c)
+			if e != nil {
+				utils.Log().Error(c.FullPath(), "createOrderReq.CreateOrder error: %s", e.Err.Error())
+			}
+		}(c, lantuWxPayQueryOrderResp)
+	}
+
+	return lantuWxPayQueryOrderResp, nil
 }

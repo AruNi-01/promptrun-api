@@ -19,7 +19,7 @@ func Init() {
 
 	utils.BuildLogger(os.Getenv("LOG_LEVEL"))
 
-	model.InitDB(os.Getenv("MySQL_DSN"))
+	model.InitDB(os.Getenv("MYSQL_DSN"))
 
 	cache.InitRedis()
 

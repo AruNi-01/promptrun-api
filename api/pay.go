@@ -39,3 +39,19 @@ func LantuWxPayNotify(c *gin.Context) {
 		c.JSON(http.StatusOK, "SUCCESS")
 	}
 }
+
+// LantuWxPayQueryOrder 蓝兔支付订单查询接口
+func LantuWxPayQueryOrder(c *gin.Context) {
+	var lantuWxPayQueryOrderReq service.LantuWxPayQueryOrderReq
+	if err := c.ShouldBindJSON(&lantuWxPayQueryOrderReq); err != nil {
+		utils.Log().Error(c.FullPath(), "请求参数错误")
+		c.JSON(http.StatusBadRequest, ErrorResponse(errs.ErrParam, "请求参数错误"))
+	} else {
+		data, e := lantuWxPayQueryOrderReq.LantuWxPayQueryOrder(c)
+		if e != nil {
+			c.JSON(http.StatusOK, ErrorResponse(e.ErrCode, e.Err.Error()))
+			return
+		}
+		c.JSON(http.StatusOK, SuccessResponse(data))
+	}
+}

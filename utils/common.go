@@ -18,6 +18,6 @@ func GenSnowflakeId() int64 {
 		Log().Error("", "snowflake.NewNode error: %s", err.Error())
 	}
 
-	// 截取低 11 位作为唯一 ID
-	return node.Generate().Int64()
+	// 截取低 16 位作为唯一 ID
+	return node.Generate().Int64() / 1000
 }
