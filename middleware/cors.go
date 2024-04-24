@@ -16,7 +16,7 @@ func Cors() gin.HandlerFunc {
 
 	// 生产环境需要配置实际的跨域域名，否则 403
 	if gin.Mode() == gin.ReleaseMode {
-		config.AllowOrigins = []string{"https://promptrun.0x3f4.run"}
+		config.AllowOrigins = []string{"https://promptrun.0x3f4.run", "https://promptrun.shop", "http://promptrun.0x3f4.run", "http://promptrun.shop"}
 	} else {
 		// 测试环境下模糊匹配本地开头的请求
 		config.AllowOriginFunc = func(origin string) bool {
