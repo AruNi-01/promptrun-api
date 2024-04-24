@@ -2,11 +2,14 @@ package routers
 
 import (
 	"github.com/gin-gonic/gin"
+	"os"
 	"promptrun-api/api"
 	"promptrun-api/middleware"
 )
 
 func SetupRouter() *gin.Engine {
+	gin.SetMode(os.Getenv("GIN_MODE"))
+
 	route := gin.Default()
 
 	route.Use(middleware.Cors()) // 跨域配置
