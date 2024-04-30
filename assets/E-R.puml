@@ -1,0 +1,138 @@
+@startuml
+entity "user" {
+  * id : int
+  --
+  email : varchar(50)
+  password : varchar(255)
+  nickname : varchar(50)
+  header_url : varchar(255)
+  type : int
+  create_time : datetime
+}
+
+entity "seller" {
+  * id : int
+  --
+  user_id : int
+  rating : float(2, 1)
+  status : int
+  intro : varchar(255)
+  sell_amount : int
+  like_amount : int
+  create_time : datetime
+}
+
+entity "wallet" {
+  * user_id : int
+  --
+  wallet_income : decimal(10, 2)
+  wallet_outcome : decimal(10, 2)
+  balance : decimal(10, 2)
+  create_time : datetime
+}
+
+entity "model" {
+  * id : int
+  --
+  name : varchar(50)
+  media_type : int
+}
+
+entity "prompt" {
+  * id : int
+  --
+  seller_id : int
+  model_id : int
+  category_type : int
+  title : varchar(255)
+  intro : varchar(255)
+  price : decimal(10, 2)
+  rating : float(2, 1)
+  score : double
+  sell_amount : int
+  browse_amount : int
+  like_amount : int
+  publish_status : int
+  audit_status : int
+  create_time : datetime
+}
+
+entity "prompt_detail" {
+  * id : int
+  --
+  prompt_id : int
+  content : text
+  media_type : int
+  use_suggestion : text
+  create_time : datetime
+}
+
+entity "prompt_img" {
+  * id : int
+  --
+  prompt_id : int
+  img_url : varchar(255)
+  is_master : int
+}
+
+entity "order" {
+  * id : bigint
+  --
+  prompt_id : int
+  seller_id : int
+  buyer_id : int
+  price : decimal(10, 2)
+  is_rating : int
+  rating : float(2, 1)
+  create_time : datetime
+}
+
+entity "order_rating" {
+  * id : int
+  --
+  order_id : bigint
+  prompt_id : int
+  seller_id : int
+  rating : float(2, 1)
+  create_time : datetime
+}
+
+entity "likes" {
+  * id : int
+  --
+  user_id : int
+  prompt_id : int
+  seller_id : int
+  create_time : datetime
+}
+
+entity "message" {
+  * id : int
+  --
+  from_user_id : int
+  to_user_id : int
+  type : smallint
+  content : text
+  isRead : smallint
+  create_time : datetime
+}
+
+user ||--|| seller : user_id
+user ||--|| wallet : user_id
+seller ||--o{ prompt : seller_id
+model ||--o{ prompt : model_id
+prompt ||--|| prompt_detail : id
+prompt ||--o{ prompt_img : id
+prompt ||--o{ order : prompt_id
+seller ||--o{ order : seller_id
+user ||--o{ order : buyer_id
+order_rating ||--|| order : order_id
+prompt ||--o{ order_rating : prompt_id
+seller ||--o{ order_rating : seller_id
+user ||--o{ likes : user_id
+prompt ||--o{ likes : prompt_id
+seller ||--o{ likes : seller_id
+user ||--o{ message : from_user_id
+user ||--o{ message : to_user_id
+
+@enduml
