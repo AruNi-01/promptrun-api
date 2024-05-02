@@ -1,0 +1,30 @@
+@startuml
+actor User
+participant RegisterReq
+participant LoginReq
+participant model.User
+participant model.DB
+participant cache2.RedisCli
+participant json.Marshal
+participant saveCookie
+
+User -> RegisterReq: 发起注册请求
+RegisterReq -> RegisterReq: 表单数据校验
+RegisterReq -> model.User: 创建用户对象
+RegisterReq -> model.User: SetPassword()
+RegisterReq -> model.DB: 创建用户
+model.DB --> RegisterReq: 返回注册结果
+RegisterReq --> User: 返回注册结果
+
+User -> LoginReq: 发起登录请求
+LoginReq -> model.DB: 查询用户信息
+model.DB --> LoginReq: 返回用户信息
+LoginReq -> model.User: CheckPassword()
+LoginReq -> BuildLoginTicket: 生成登录凭证
+BuildLoginTicket -> cache2.RedisCli: 存入 Redis缓存
+BuildLoginTicket -> json.Marshal: 转换登录凭证为 JSON
+json.Marshal --> BuildLoginTicket: 返回 JSON 数据
+BuildLoginTicket -> saveCookie: 设置 Cookie
+saveCookie --> User: 返回登录结果
+
+@enduml

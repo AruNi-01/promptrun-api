@@ -1,0 +1,48 @@
+@startuml PromptPublishSequenceDiagram
+
+actor Seller
+participant PromptPublishReq
+participant DB
+participant OSS
+
+Seller -> PromptPublishReq: 发布提示词请求
+PromptPublishReq -> DB: 获取模型 (model)
+DB -> PromptPublishReq: 返回模型
+
+PromptPublishReq -> DB: 获取卖家 (seller)
+DB -> PromptPublishReq: 返回卖家
+
+PromptPublishReq -> DB: 创建提示词 (prompt)
+DB -> PromptPublishReq: 返回创建结果
+
+PromptPublishReq -> DB: 获取模型类型 (ModelMediaType)
+DB -> PromptPublishReq: 返回模型类型
+
+alt ModelMediaTypeText
+  PromptPublishReq -> PromptPublishReq: 调用 handleTextPromptPublish
+  PromptPublishReq -> OSS: 上传 Banner 图片
+  OSS -> PromptPublishReq: 返回图片 URL
+  PromptPublishReq -> DB: 创建提示词图片 (prompt_img)
+  DB -> PromptPublishReq: 返回创建结果
+  PromptPublishReq -> DB: 创建提示词详情 (prompt_detail)
+  DB -> PromptPublishReq: 返回创建结果
+end
+
+alt ModelMediaTypeImage
+  PromptPublishReq -> PromptPublishReq: 调用 handleImagePromptPublish
+  PromptPublishReq -> OSS: 上传 Banner 图片
+  OSS -> PromptPublishReq: 返回图片 URL
+  PromptPublishReq -> DB: 创建提示词图片 (prompt_img)
+  DB -> PromptPublishReq: 返回创建结果
+
+  loop 遍历上传的所有图片
+    PromptPublishReq -> OSS: 上传提示词图片
+    OSS -> PromptPublishReq: 返回图片 URL
+    PromptPublishReq -> DB: 创建提示词图片 (prompt_img)
+    DB -> PromptPublishReq: 返回创建结果
+  end
+
+end
+PromptPublishReq -> Seller: 返回发布结果
+
+@enduml

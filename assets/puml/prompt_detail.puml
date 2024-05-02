@@ -1,0 +1,37 @@
+@startuml
+actor User
+participant FindPromptFullInfoById
+participant updatePromptBrowseAmountAsync
+participant FindPromptById
+participant FindSellerById
+participant FindUserById
+participant FindModelById
+participant FindPromptImgListByPromptId
+
+User -> FindPromptFullInfoById: 请求 FindPromptFullInfoById
+FindPromptFullInfoById ->> updatePromptBrowseAmountAsync: 异步调用 updatePromptBrowseAmountAsync
+activate updatePromptBrowseAmountAsync
+updatePromptBrowseAmountAsync -> updatePromptBrowseAmountAsync: 更新提示词浏览量
+deactivate updatePromptBrowseAmountAsync
+FindPromptFullInfoById -> FindPromptById: 调用 FindPromptById
+activate FindPromptById
+FindPromptById --> FindPromptFullInfoById: 返回提示词信息
+deactivate FindPromptById
+FindPromptFullInfoById -> FindSellerById: 调用 FindSellerById
+activate FindSellerById
+FindSellerById --> FindPromptFullInfoById: 返回卖家信息
+deactivate FindSellerById
+FindPromptFullInfoById -> FindUserById: 调用 FindUserById
+activate FindUserById
+FindUserById --> FindPromptFullInfoById: 返回卖家用户信息
+deactivate FindUserById
+FindPromptFullInfoById -> FindModelById: 调用 FindModelById
+activate FindModelById
+FindModelById --> FindPromptFullInfoById: 返回提示词模型信息
+deactivate FindModelById
+FindPromptFullInfoById -> FindPromptImgListByPromptId: 调用 FindPromptImgListByPromptId
+activate FindPromptImgListByPromptId
+FindPromptImgListByPromptId --> FindPromptFullInfoById: 返回提示词图片列表信息
+deactivate FindPromptImgListByPromptId
+FindPromptFullInfoById --> User: 返回 PromptDetailResp
+@enduml

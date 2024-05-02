@@ -1,0 +1,43 @@
+@startuml
+actor User
+participant PromptListReq
+participant model.Prompt
+participant model.DB
+participant utils.Paginate
+participant FindSellerByUserId
+
+User -> PromptListReq: 发起获取提示词列表请求
+PromptListReq -> model.DB: 创建查询对象
+alt ModelId 不为空
+	PromptListReq -> model.DB: 添加 ModelId 条件
+end
+alt CategoryTypes 不为空
+	PromptListReq -> model.DB: 添加 CategoryTypes 条件
+end
+alt 根据 SortBy 排序
+	PromptListReq -> model.DB: 根据 SortBy 排序
+end
+alt PublishStatus 不为空
+	PromptListReq -> model.DB: 添加 PublishStatus 条件
+end
+alt AuditStatus 不为空
+	PromptListReq -> model.DB: 添加 AuditStatus 条件
+end
+alt UserId 不为空
+	PromptListReq -> FindSellerByUserId: 获取卖家信息
+	FindSellerByUserId --> PromptListReq: 返回卖家信息
+	PromptListReq -> model.DB: 添加 SellerId 条件
+end
+PromptListReq -> model.DB: 计算总数
+PromptListReq -> utils.Paginate: 分页查询
+utils.Paginate --> model.DB: 返回分页结果
+model.DB -> model.DB: 查询提示词列表
+model.DB --> PromptListReq: 返回提示词列表结果
+
+alt 错误处理
+	PromptListReq --> User: 返回错误信息
+else 正常情况
+	PromptListReq --> User: 返回获取到的提示词列表
+end
+
+@enduml

@@ -1,0 +1,34 @@
+@startuml
+actor User
+participant Client
+participant LantuWxPay
+participant LantuWxPayQueryOrder
+participant model.Order
+participant model.Wallet
+
+User -> Client: 请求支付
+Client -> LantuWxPay: 调用 LantuWxPay 方法
+activate LantuWxPay
+LantuWxPay -> LantuWxPay: 生成订单号、准备支付数据
+LantuWxPay --> Client: 返回支付二维码链接
+Client --> User: 返回支付二维码
+deactivate LantuWxPay
+activate Client
+loop 循环检查订单支付状态
+    Client -> LantuWxPayQueryOrder: 调用 LantuWxPayQueryOrder 方法
+    activate LantuWxPayQueryOrder
+    LantuWxPayQueryOrder -> LantuWxPayQueryOrder: 准备查询订单数据
+    LantuWxPayQueryOrder --> Client: 返回订单支付状态信息
+    deactivate LantuWxPayQueryOrder
+    alt 订单支付成功
+        Client -> Client: 跳出循环
+        Client ->> model.Order: 异步创建订单
+        Client ->> model.Wallet: 异步增加/扣减余额
+    else 订单支付失败
+        Client -> Client: 继续循环
+    end
+end
+Client --> User: 返回购买成功信息
+deactivate Client
+
+@enduml

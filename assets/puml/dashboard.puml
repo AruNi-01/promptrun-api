@@ -1,0 +1,35 @@
+@startuml
+actor Seller
+participant FindChartsFullInfo
+participant FindSellerByUserId
+participant findSellMoneyEveryMonth
+participant findSellCountEveryMonth
+participant findSellModelRatio
+participant FindPromptCountBySellerId
+participant findSellPromptCountBySellerId
+participant findEarnMoneyBySellerId
+participant FindBecomeSellerDayBySellerId
+
+Seller -> FindChartsFullInfo: 请求整体看板数据
+activate FindChartsFullInfo
+FindChartsFullInfo -> FindSellerByUserId: 获取卖家信息
+activate FindSellerByUserId
+FindSellerByUserId --> FindChartsFullInfo: 返回卖家信息
+deactivate FindSellerByUserId
+FindChartsFullInfo -> findSellMoneyEveryMonth: 获取每月销售金额
+findSellMoneyEveryMonth --> FindChartsFullInfo: 返回每月销售金额数据
+FindChartsFullInfo -> findSellCountEveryMonth: 获取每月销售数量
+findSellCountEveryMonth --> FindChartsFullInfo: 返回每月销售数量数据
+FindChartsFullInfo -> findSellModelRatio: 获取每个模型的销售比例
+findSellModelRatio --> FindChartsFullInfo: 返回销售比例数据
+FindChartsFullInfo -> FindPromptCountBySellerId: 获取卖家的提示词数量
+FindPromptCountBySellerId --> FindChartsFullInfo: 返回提示词数量数据
+FindChartsFullInfo -> findSellPromptCountBySellerId: 获取卖家的销售提示词数量
+findSellPromptCountBySellerId --> FindChartsFullInfo: 返回销售提示词数量数据
+FindChartsFullInfo -> findEarnMoneyBySellerId: 获取卖家的总收益
+findEarnMoneyBySellerId --> FindChartsFullInfo: 返回总收益数据
+FindChartsFullInfo -> FindBecomeSellerDayBySellerId: 获取卖家成为卖家的天数
+FindBecomeSellerDayBySellerId --> FindChartsFullInfo: 返回成为卖家天数数据
+FindChartsFullInfo --> Seller: 返回整体看板数据
+deactivate FindChartsFullInfo
+@enduml
