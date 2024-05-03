@@ -51,3 +51,16 @@ func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
 	}
 	return
 }
+
+// AfterCreate 创建后的钩子函数，创建钱包
+func (u *User) AfterCreate(tx *gorm.DB) (err error) {
+	// 创建钱包
+	wallet := Wallet{
+		UserId:        u.Id,
+		WalletIncome:  Money0,
+		WalletOutcome: Money0,
+		Balance:       Money10,
+		CreateTime:    time.Now(),
+	}
+	return wallet.Create()
+}

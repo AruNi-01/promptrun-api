@@ -118,6 +118,11 @@ func SetupRouter() *gin.Engine {
 				pay2.POST("api/v1/pay/lantuWxPay", api.LantuWxPay)
 				pay2.POST("api/v1/pay/lantuWxPayQueryOrder", api.LantuWxPayQueryOrder)
 			}
+
+			wallet2 := rootGroup.Group("")
+			{
+				wallet2.GET("api/v1/wallet/findByUserId/:userId", api.FindByUserId)
+			}
 		}
 
 	}
