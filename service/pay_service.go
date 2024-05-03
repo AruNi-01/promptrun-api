@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"promptrun-api/common/errs"
+	"promptrun-api/model"
 	"promptrun-api/third_party/lantu_pay"
 	"promptrun-api/utils"
 	"strconv"
@@ -17,13 +18,14 @@ const (
 	LantuWxPayNotifyFail    = "1" // LantuWxPayNotifyFail 支付失败
 )
 
-// LantuWxPayReq 蓝兔微信支付请求参数
+// LantuWxPayReq 蓝兔微信支付请求参数，同时也作为 Attach 附加数据类型，用于回调通知时获取订单信息
 type LantuWxPayReq struct {
-	PromptId    int     `json:"promptId"`
-	PromptTitle string  `json:"promptTitle"`
-	SellerId    int     `json:"sellerId"`
-	BuyerId     int     `json:"buyerId"`
-	Price       float64 `json:"price"`
+	PromptId     int     `json:"promptId"`
+	PromptTitle  string  `json:"promptTitle"`
+	SellerId     int     `json:"sellerId"`
+	SellerUserId int     `json:"sellerUserId"`
+	BuyerId      int     `json:"buyerId"`
+	Price        float64 `json:"price"`
 }
 
 type LantuWxPayQueryOrderReq struct {
@@ -173,24 +175,57 @@ func (r *LantuWxPayQueryOrderReq) LantuWxPayQueryOrder(c *gin.Context) (LantuWxP
 		}(c, resp.Data.Attach),
 	}
 
-	// 支付成功，异步创建订单，TODO：对于创建失败的订单，可以通过订单查询接口再次创建来补偿
+	// 支付成功，计算钱包、异步创建订单和生成账单。TODO：对于创建失败的订单，可以通过订单查询接口再次创建来补偿
 	if lantuWxPayQueryOrderResp.IsPay {
-		go func(c *gin.Context, r LantuWxPayQueryOrderResp) {
-			// 从附加数据中获取订单信息
-			createOrderReq := CreateOrderReq{
-				Id:         r.OrderId,
-				PromptId:   r.Attach.PromptId,
-				SellerId:   r.Attach.SellerId,
-				BuyerId:    r.Attach.BuyerId,
-				Price:      r.Attach.Price,
-				CreateTime: r.PayTime,
-			}
-			_, e := createOrderReq.CreateOrder(c)
-			if e != nil {
-				utils.Log().Error(c.FullPath(), "createOrderReq.CreateOrder error: %s", e.Err.Error())
-			}
-		}(c, lantuWxPayQueryOrderResp)
+		// 计算卖家在平台的余额和收入总额
+		if _, e := CalculateBalanceAndIncome(c, lantuWxPayQueryOrderResp.Attach.SellerUserId,
+			lantuWxPayQueryOrderResp.Attach.Price, lantuWxPayQueryOrderResp.Attach.Price); e != nil {
+			return LantuWxPayQueryOrderResp{}, e
+		}
+		// 计算买家在平台的支出总额
+		if _, e := CalculateBalanceAndOutcome(c, lantuWxPayQueryOrderResp.Attach.BuyerId,
+			0, lantuWxPayQueryOrderResp.Attach.Price); e != nil {
+			return LantuWxPayQueryOrderResp{}, e
+		}
+
+		go genOrderAndBill(c, lantuWxPayQueryOrderResp)
 	}
 
 	return lantuWxPayQueryOrderResp, nil
+}
+
+func genOrderAndBill(c *gin.Context, r LantuWxPayQueryOrderResp) {
+	// 从附加数据中获取订单信息
+	createOrderReq := CreateOrderReq{
+		Id:         r.OrderId,
+		PromptId:   r.Attach.PromptId,
+		SellerId:   r.Attach.SellerId,
+		BuyerId:    r.Attach.BuyerId,
+		Price:      r.Attach.Price,
+		CreateTime: r.PayTime,
+	}
+	_, e := createOrderReq.CreateOrder(c)
+	if e != nil {
+		utils.Log().Error(c.FullPath(), "createOrderReq.CreateOrder error: %s", e.Err.Error())
+	}
+
+	// 生成账单
+	bill := model.Bill{
+		UserId:     r.Attach.SellerUserId,
+		Type:       model.BillTypeIncome,
+		Amount:     r.Attach.Price,
+		Channel:    model.BillChannelWxPay,
+		Remark:     fmt.Sprintf("售出 Prompt - %s", r.Attach.PromptTitle),
+		CreateTime: time.Now(),
+	}
+	if _, e := AddBill(c, bill); e != nil {
+		utils.Log().Error(c.FullPath(), "Add seller bill error: %s", e.Err.Error())
+	}
+
+	bill.UserId = r.Attach.BuyerId
+	bill.Type = model.BillTypeOutcome
+	bill.Remark = fmt.Sprintf("购买 Prompt - %s", r.Attach.PromptTitle)
+	if _, e := AddBill(c, bill); e != nil {
+		utils.Log().Error(c.FullPath(), "Add buyer bill error: %s", e.Err.Error())
+	}
 }
