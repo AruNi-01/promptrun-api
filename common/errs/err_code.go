@@ -23,6 +23,8 @@ const (
 	ErrRecordNotFound
 
 	ErrLikeIntervalTooShort
+
+	ErrBalanceNotEnough
 )
 
 const (

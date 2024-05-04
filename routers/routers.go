@@ -117,6 +117,7 @@ func SetupRouter() *gin.Engine {
 			{
 				pay2.POST("api/v1/pay/lantuWxPay", api.LantuWxPay)
 				pay2.POST("api/v1/pay/lantuWxPayQueryOrder", api.LantuWxPayQueryOrder)
+				pay2.POST("api/v1/pay/balancePay", api.BalancePay)
 			}
 
 			wallet2 := rootGroup.Group("")

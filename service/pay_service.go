@@ -18,14 +18,19 @@ const (
 	LantuWxPayNotifyFail    = "1" // LantuWxPayNotifyFail 支付失败
 )
 
-// LantuWxPayReq 蓝兔微信支付请求参数，同时也作为 Attach 附加数据类型，用于回调通知时获取订单信息
-type LantuWxPayReq struct {
+// BasePayReq 支付请求，基础参数 struct
+type BasePayReq struct {
 	PromptId     int     `json:"promptId"`
 	PromptTitle  string  `json:"promptTitle"`
 	SellerId     int     `json:"sellerId"`
 	SellerUserId int     `json:"sellerUserId"`
 	BuyerId      int     `json:"buyerId"`
 	Price        float64 `json:"price"`
+}
+
+// LantuWxPayReq 蓝兔微信支付请求参数，同时也作为 Attach 附加数据类型，用于回调通知时获取订单信息
+type LantuWxPayReq struct {
+	BasePayReq
 }
 
 type LantuWxPayQueryOrderReq struct {
@@ -58,6 +63,16 @@ type LantuWxPayNotifyParams struct {
 	SuccessTime string `json:"success_time"` // 支付成功时间
 	Attach      string `json:"attach"`       // 附加数据，在支付接口中填写的数据，可作为自定义参数使用。
 	OpenId      string `json:"open_id"`      // 支付者信息，在此商户下的唯一标识
+}
+
+// BalancePayReq 余额支付请求参数
+type BalancePayReq struct {
+	BasePayReq
+	Wallet model.Wallet `json:"wallet"`
+}
+
+type BalancePayResp struct {
+	OrderId int64 `json:"orderId"`
 }
 
 // LantuWxPay 蓝兔微信支付接口，返回支付二维码
@@ -188,22 +203,68 @@ func (r *LantuWxPayQueryOrderReq) LantuWxPayQueryOrder(c *gin.Context) (LantuWxP
 			return LantuWxPayQueryOrderResp{}, e
 		}
 
-		go genOrderAndBill(c, lantuWxPayQueryOrderResp)
+		go genOrderAndBill(
+			c,
+			CreateOrderReq{
+				// 从附加数据中获取订单信息
+				Id:         lantuWxPayQueryOrderResp.OrderId,
+				PromptId:   lantuWxPayQueryOrderResp.Attach.PromptId,
+				SellerId:   lantuWxPayQueryOrderResp.Attach.SellerId,
+				BuyerId:    lantuWxPayQueryOrderResp.Attach.BuyerId,
+				Price:      lantuWxPayQueryOrderResp.Attach.Price,
+				CreateTime: lantuWxPayQueryOrderResp.PayTime},
+			lantuWxPayQueryOrderResp.Attach.SellerUserId,
+			lantuWxPayQueryOrderResp.Attach.PromptTitle,
+			model.BillChannelBalance,
+			model.BillChannelWxPay,
+		)
 	}
 
 	return lantuWxPayQueryOrderResp, nil
 }
 
-func genOrderAndBill(c *gin.Context, r LantuWxPayQueryOrderResp) {
-	// 从附加数据中获取订单信息
-	createOrderReq := CreateOrderReq{
-		Id:         r.OrderId,
-		PromptId:   r.Attach.PromptId,
-		SellerId:   r.Attach.SellerId,
-		BuyerId:    r.Attach.BuyerId,
-		Price:      r.Attach.Price,
-		CreateTime: r.PayTime,
+// BalancePay 余额支付
+func (r *BalancePayReq) BalancePay(c *gin.Context) (BalancePayResp, *errs.Errs) {
+	// 余额支付
+	if r.Wallet.Balance < r.Price {
+		return BalancePayResp{}, errs.NewErrs(errs.ErrBalanceNotEnough, errors.New("账户余额不足"))
 	}
+	// 计算余额和收入，余额增加，收入增加
+	if _, e := CalculateBalanceAndIncome(c, r.SellerUserId, r.Price, r.Price); e != nil {
+		return BalancePayResp{}, e
+	}
+	// 计算余额和支出，余额减少，支出增加
+	if _, e := CalculateBalanceAndOutcome(c, r.BuyerId, r.Price, r.Price); e != nil {
+		return BalancePayResp{}, e
+	}
+
+	orderId := utils.GenSnowflakeId()
+
+	// 创建订单，生成账单
+	go genOrderAndBill(
+		c,
+		CreateOrderReq{
+			Id:         orderId,
+			PromptId:   r.PromptId,
+			SellerId:   r.SellerId,
+			BuyerId:    r.BuyerId,
+			Price:      r.Price,
+			CreateTime: time.Now(),
+		},
+		r.SellerUserId,
+		r.PromptTitle,
+		model.BillChannelBalance,
+		model.BillChannelBalance,
+	)
+	go IncreaseSellerSellAmount(c, r.SellerId)
+
+	return BalancePayResp{
+		OrderId: orderId,
+	}, nil
+}
+
+func genOrderAndBill(c *gin.Context, createOrderReq CreateOrderReq,
+	sellerUserId int, promptTitle string, incomeChannel, outcomeChannel int) {
 	_, e := createOrderReq.CreateOrder(c)
 	if e != nil {
 		utils.Log().Error(c.FullPath(), "createOrderReq.CreateOrder error: %s", e.Err.Error())
@@ -211,21 +272,21 @@ func genOrderAndBill(c *gin.Context, r LantuWxPayQueryOrderResp) {
 
 	// 生成账单
 	bill := model.Bill{
-		UserId:     r.Attach.SellerUserId,
+		UserId:     sellerUserId,
 		Type:       model.BillTypeIncome,
-		Amount:     r.Attach.Price,
-		Channel:    model.BillChannelBalance,
-		Remark:     fmt.Sprintf("售出 Prompt - %s", r.Attach.PromptTitle),
+		Amount:     createOrderReq.Price,
+		Channel:    incomeChannel,
+		Remark:     fmt.Sprintf("售出 Prompt - %s", promptTitle),
 		CreateTime: time.Now(),
 	}
 	if _, e := AddBill(c, bill); e != nil {
 		utils.Log().Error(c.FullPath(), "Add seller bill error: %s", e.Err.Error())
 	}
 
-	bill.UserId = r.Attach.BuyerId
+	bill.UserId = createOrderReq.BuyerId
 	bill.Type = model.BillTypeOutcome
-	bill.Channel = model.BillChannelWxPay
-	bill.Remark = fmt.Sprintf("购买 Prompt - %s", r.Attach.PromptTitle)
+	bill.Channel = outcomeChannel
+	bill.Remark = fmt.Sprintf("购买 Prompt - %s", promptTitle)
 	if _, e := AddBill(c, bill); e != nil {
 		utils.Log().Error(c.FullPath(), "Add buyer bill error: %s", e.Err.Error())
 	}
