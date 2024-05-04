@@ -123,6 +123,11 @@ func SetupRouter() *gin.Engine {
 			{
 				wallet2.GET("api/v1/wallet/findByUserId/:userId", api.FindByUserId)
 			}
+
+			bill2 := rootGroup.Group("")
+			{
+				bill2.POST("api/v1/bill/listByUserId", api.BillListByUserId)
+			}
 		}
 
 	}

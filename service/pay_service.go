@@ -214,7 +214,7 @@ func genOrderAndBill(c *gin.Context, r LantuWxPayQueryOrderResp) {
 		UserId:     r.Attach.SellerUserId,
 		Type:       model.BillTypeIncome,
 		Amount:     r.Attach.Price,
-		Channel:    model.BillChannelWxPay,
+		Channel:    model.BillChannelBalance,
 		Remark:     fmt.Sprintf("售出 Prompt - %s", r.Attach.PromptTitle),
 		CreateTime: time.Now(),
 	}
@@ -224,6 +224,7 @@ func genOrderAndBill(c *gin.Context, r LantuWxPayQueryOrderResp) {
 
 	bill.UserId = r.Attach.BuyerId
 	bill.Type = model.BillTypeOutcome
+	bill.Channel = model.BillChannelWxPay
 	bill.Remark = fmt.Sprintf("购买 Prompt - %s", r.Attach.PromptTitle)
 	if _, e := AddBill(c, bill); e != nil {
 		utils.Log().Error(c.FullPath(), "Add buyer bill error: %s", e.Err.Error())
