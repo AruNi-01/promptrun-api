@@ -65,6 +65,8 @@ func (r *LikeReq) Like(c *gin.Context) (err *errs.Errs) {
 			return errs.NewErrs(errs.ErrDBError, errors.New("点赞失败"))
 		}
 		addOrSubAmount = 1
+
+		go LikeMsgNotice(c, likes)
 	}
 
 	if model.DB.Model(&model.Prompt{}).Where("id = ?", r.PromptId).UpdateColumn("like_amount", gorm.Expr("like_amount + ?", addOrSubAmount)).Error != nil {
@@ -75,6 +77,6 @@ func (r *LikeReq) Like(c *gin.Context) (err *errs.Errs) {
 		utils.Log().Error(c.FullPath(), "更新卖家获点赞数失败")
 		return errs.NewErrs(errs.ErrDBError, errors.New("更新卖家获点赞数失败"))
 	}
-	return nil
 
+	return nil
 }
