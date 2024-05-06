@@ -378,6 +378,9 @@ func (r *PromptPublishReq) handleTextPromptPublish(c *gin.Context, promptId int)
 		utils.Log().Error(c.FullPath(), "DB 创建提示词详情失败")
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词详情失败"))
 	}
+
+	go PromptPublishMsgNotice(c, promptId)
+
 	return true, nil
 }
 
@@ -417,6 +420,9 @@ func (r *PromptPublishReq) handleImagePromptPublish(c *gin.Context, promptId int
 			return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词图片失败"))
 		}
 	}
+
+	go PromptPublishMsgNotice(c, promptId)
+
 	return true, nil
 }
 

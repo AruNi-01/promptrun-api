@@ -47,7 +47,7 @@ func OrderListAttachPromptDetailById(c *gin.Context) {
 }
 
 func OrderRatingById(c *gin.Context) {
-	orderId, _ := strconv.Atoi(c.Query("orderId"))
+	orderId, _ := strconv.ParseInt(c.Query("orderId"), 10, 64)
 	rating, _ := strconv.ParseFloat(c.Query("rating"), 64)
 	order, e := service.OrderRatingById(c, orderId, rating)
 	if e != nil {

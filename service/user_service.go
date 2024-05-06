@@ -81,5 +81,7 @@ func (r *UserBecomeSellerReq) BecomeSeller(c *gin.Context) (bool, *errs.Errs) {
 		utils.Log().Error(c.FullPath(), "发送邮件失败，errMsg: %s", err.Error())
 	}
 
+	go SellerBecomeMsgNotice(c, r.UserId)
+
 	return true, nil
 }

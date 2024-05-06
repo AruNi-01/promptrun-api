@@ -343,7 +343,7 @@ func FindOrderById(c *gin.Context, orderId int64) (model.Order, *errs.Errs) {
 	return order, nil
 }
 
-func OrderRatingById(c *gin.Context, orderId int, rating float64) (model.Order, *errs.Errs) {
+func OrderRatingById(c *gin.Context, orderId int64, rating float64) (model.Order, *errs.Errs) {
 	var order model.Order
 	if model.DB.Where("id = ?", orderId).First(&order).Error != nil {
 		utils.Log().Error(c.FullPath(), "DB 获取订单失败")
@@ -363,6 +363,8 @@ func OrderRatingById(c *gin.Context, orderId int, rating float64) (model.Order, 
 			utils.Log().Error(c.FullPath(), "异步插入订单评分表失败")
 		}
 	}()
+
+	go OrderRatingMsgNotice(c, order)
 
 	return order, nil
 }

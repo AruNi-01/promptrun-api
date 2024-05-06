@@ -218,6 +218,8 @@ func (r *LantuWxPayQueryOrderReq) LantuWxPayQueryOrder(c *gin.Context) (LantuWxP
 			model.BillChannelBalance,
 			model.BillChannelWxPay,
 		)
+
+		go PromptSoldMsgNotice(c, lantuWxPayQueryOrderResp.Attach.PromptTitle, lantuWxPayQueryOrderResp.Attach.SellerUserId, lantuWxPayQueryOrderResp.Attach.BuyerId)
 	}
 
 	return lantuWxPayQueryOrderResp, nil
@@ -257,6 +259,8 @@ func (r *BalancePayReq) BalancePay(c *gin.Context) (BalancePayResp, *errs.Errs) 
 		model.BillChannelBalance,
 	)
 	go IncreaseSellerSellAmount(c, r.SellerId)
+
+	go PromptSoldMsgNotice(c, r.PromptTitle, r.SellerUserId, r.BuyerId)
 
 	return BalancePayResp{
 		OrderId: orderId,
