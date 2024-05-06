@@ -129,6 +129,13 @@ func SetupRouter() *gin.Engine {
 			{
 				bill2.POST("api/v1/bill/listByUserId", api.BillListByUserId)
 			}
+
+			message2 := rootGroup.Group("")
+			{
+				message2.GET("api/v1/message/listByUserId/:userId", api.MessageListByUserId)
+				message2.POST("api/v1/message/readAll/:userId", api.ReadAllMessage)
+				message2.GET("api/v1/message/notReadCountByUserId/:userId", api.MessageNotReadCountByUserId)
+			}
 		}
 
 	}
