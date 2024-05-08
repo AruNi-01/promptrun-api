@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"math"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/third_party"
@@ -33,6 +34,7 @@ type PromptListReq struct {
 	ModelId       *int        `json:"modelId,omitempty"`
 	CategoryTypes []int       `json:"categoryTypes,omitempty"`
 	SortBy        string      `json:"sortBy,omitempty"`
+	Limit         *int        `json:"limit,omitempty"`
 
 	PublishStatus []int `json:"publishStatus,omitempty"`
 	AuditStatus   []int `json:"auditStatus,omitempty"`
@@ -136,6 +138,11 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 
 	// 注意：Count 要放在分页查询之前，否则会导致 count 为空
 	query.Count(&r.Paginate.Rows)
+
+	if r.Limit != nil {
+		query = query.Limit(*r.Limit)
+		r.Paginate.Rows = int(math.Min(float64(r.Paginate.Rows), float64(*r.Limit)))
+	}
 
 	if query.Scopes(
 		utils.Paginate(r.Paginate)).
