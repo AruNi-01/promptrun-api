@@ -1,0 +1,54 @@
+version: "3"
+services:
+  kafka:
+    image: 'bitnami/kafka:latest'
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9998:9998"
+    volumes:
+      - type: volume
+        source: kafka_standalone_data
+        target: /bitnami/kafka
+        read_only: false
+    environment:
+      - BITNAMI_DEBUG=yes
+      # 启用KRaft模式必须设置下面三个属性
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      # broker id
+      - KAFKA_BROKER_ID=1
+      # listener的各种配置
+      - KAFKA_CFG_LISTENERS=CONTROLLER://:9094,BROKER://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      # 注意EXTERNAL配置的是当前Docker所在的主机地址,BROKER可以使用Docker内部的网络地址即可
+      - KAFKA_CFG_ADVERTISED_LISTENERS=BROKER://kafka:9092,EXTERNAL://promptrun.shop:9093
+      # 内部各个broker之间通信用的listener
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=BROKER
+      # 用来进行选举的Controller服务器，如果有多个Controller则都需要写上，这里本机
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9094
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      # 开启JMX监控
+      - JMX_PORT=9998
+      - KAFKA_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka -Dcom.sun.management.jmxremote.rmi.port=9998
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "9095:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka-stand-alone
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_METRICS_PORT: 9998
+      SERVER_SERVLET_CONTEXT_PATH: /kafkaui
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: admin
+      DYNAMIC_CONFIG_ENABLED: 'true'
+volumes:
+  kafka_standalone_data:
+    driver: local

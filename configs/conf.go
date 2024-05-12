@@ -6,6 +6,7 @@ import (
 	"promptrun-api/model"
 	"promptrun-api/third_party"
 	"promptrun-api/third_party/cache"
+	"promptrun-api/third_party/kafka2"
 	"promptrun-api/utils"
 )
 
@@ -25,5 +26,7 @@ func Init() {
 
 	third_party.OSSInit()
 	third_party.MailInit()
+
+	kafka2.InitKafkaBroker()
 
 }
