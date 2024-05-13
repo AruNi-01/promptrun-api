@@ -70,9 +70,9 @@ func FindBecomeSellerDayBySellerId(c *gin.Context, sellerId int) (int, *errs.Err
 	return int(time.Now().Sub(seller.CreateTime).Hours() / 24), nil
 }
 
-func IncreaseSellerSellAmount(c *gin.Context, sellerId int) (bool, *errs.Errs) {
+func IncreaseSellerSellAmount(sellerId int) (bool, *errs.Errs) {
 	if err := model.DB.Model(&model.Seller{}).Where("id = ?", sellerId).UpdateColumn("sell_amount", gorm.Expr("sell_amount + ?", 1)).Error; err != nil {
-		utils.Log().Error(c.FullPath(), "DB 更新卖家销售量失败，errMsg: %s", err.Error())
+		utils.Log().Error("", "DB 更新卖家销售量失败，errMsg: %s", err.Error())
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 更新卖家销售量失败"))
 	}
 	return true, nil

@@ -149,8 +149,8 @@ func OrderRatingMsgNotice(order model.Order) *errs.Errs {
 	return nil
 }
 
-func PromptSoldMsgNotice(c *gin.Context, promptTitle string, sellerUserId, buyerId int) {
-	user, e := FindUserById(c, buyerId)
+func PromptSoldMsgNotice(promptTitle string, sellerUserId, buyerId int) {
+	user, e := FindUserById(&gin.Context{}, buyerId)
 	if e != nil {
 		utils.Log().Error("", "Prompt 售出通知链路发生错误 -> 未找到用户")
 		return

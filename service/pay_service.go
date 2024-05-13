@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"promptrun-api/common/constants"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
+	"promptrun-api/third_party/kafka2"
+	"promptrun-api/third_party/kafka2/vos"
 	"promptrun-api/third_party/lantu_pay"
 	"promptrun-api/utils"
 	"strconv"
@@ -203,23 +206,35 @@ func (r *LantuWxPayQueryOrderReq) LantuWxPayQueryOrder(c *gin.Context) (LantuWxP
 			return LantuWxPayQueryOrderResp{}, e
 		}
 
-		go genOrderAndBill(
-			c,
-			CreateOrderReq{
-				// 从附加数据中获取订单信息
-				Id:         lantuWxPayQueryOrderResp.OrderId,
-				PromptId:   lantuWxPayQueryOrderResp.Attach.PromptId,
-				SellerId:   lantuWxPayQueryOrderResp.Attach.SellerId,
-				BuyerId:    lantuWxPayQueryOrderResp.Attach.BuyerId,
-				Price:      lantuWxPayQueryOrderResp.Attach.Price,
-				CreateTime: lantuWxPayQueryOrderResp.PayTime},
-			lantuWxPayQueryOrderResp.Attach.SellerUserId,
-			lantuWxPayQueryOrderResp.Attach.PromptTitle,
-			model.BillChannelBalance,
-			model.BillChannelWxPay,
-		)
+		// 生成订单
+		createOrderReq := CreateOrderReq{
+			// 从附加数据中获取订单信息
+			Id:         lantuWxPayQueryOrderResp.OrderId,
+			PromptId:   lantuWxPayQueryOrderResp.Attach.PromptId,
+			SellerId:   lantuWxPayQueryOrderResp.Attach.SellerId,
+			BuyerId:    lantuWxPayQueryOrderResp.Attach.BuyerId,
+			Price:      lantuWxPayQueryOrderResp.Attach.Price,
+			CreateTime: lantuWxPayQueryOrderResp.PayTime,
+		}
+		_, e := createOrderReq.CreateOrder(c)
+		if e != nil {
+			return LantuWxPayQueryOrderResp{}, e
+		}
 
-		go PromptSoldMsgNotice(c, lantuWxPayQueryOrderResp.Attach.PromptTitle, lantuWxPayQueryOrderResp.Attach.SellerUserId, lantuWxPayQueryOrderResp.Attach.BuyerId)
+		// 发送 MQ，异步生成账单，发送通知，增加 Prompt 和卖家的销量
+		soldResult := vos.PromptSoldResult{
+			OrderId:        lantuWxPayQueryOrderResp.OrderId,
+			PromptId:       lantuWxPayQueryOrderResp.Attach.PromptId,
+			PromptTitle:    lantuWxPayQueryOrderResp.Attach.PromptTitle,
+			SellerId:       lantuWxPayQueryOrderResp.Attach.SellerId,
+			BuyerId:        lantuWxPayQueryOrderResp.Attach.BuyerId,
+			Price:          lantuWxPayQueryOrderResp.Attach.Price,
+			CreateTime:     lantuWxPayQueryOrderResp.PayTime,
+			SellerUserId:   lantuWxPayQueryOrderResp.Attach.SellerUserId,
+			IncomeChannel:  model.BillChannelBalance,
+			OutcomeChannel: model.BillChannelWxPay,
+		}
+		sendSoldResultMsg(soldResult)
 	}
 
 	return lantuWxPayQueryOrderResp, nil
@@ -242,56 +257,50 @@ func (r *BalancePayReq) BalancePay(c *gin.Context) (BalancePayResp, *errs.Errs) 
 
 	orderId := utils.GenSnowflakeId()
 
-	// 创建订单，生成账单
-	go genOrderAndBill(
-		c,
-		CreateOrderReq{
-			Id:         orderId,
-			PromptId:   r.PromptId,
-			SellerId:   r.SellerId,
-			BuyerId:    r.BuyerId,
-			Price:      r.Price,
-			CreateTime: time.Now(),
-		},
-		r.SellerUserId,
-		r.PromptTitle,
-		model.BillChannelBalance,
-		model.BillChannelBalance,
-	)
-	go IncreaseSellerSellAmount(c, r.SellerId)
+	// 生成订单
+	createOrderReq := CreateOrderReq{
+		// 从附加数据中获取订单信息
+		Id:         orderId,
+		PromptId:   r.PromptId,
+		SellerId:   r.SellerId,
+		BuyerId:    r.BuyerId,
+		Price:      r.Price,
+		CreateTime: time.Now(),
+	}
+	_, e := createOrderReq.CreateOrder(c)
+	if e != nil {
+		return BalancePayResp{}, e
+	}
 
-	go PromptSoldMsgNotice(c, r.PromptTitle, r.SellerUserId, r.BuyerId)
+	// 发送 MQ，异步生成账单，发送通知，增加 Prompt 和卖家的销量
+	soldResult := vos.PromptSoldResult{
+		OrderId:        orderId,
+		PromptId:       r.PromptId,
+		PromptTitle:    r.PromptTitle,
+		SellerId:       r.SellerId,
+		BuyerId:        r.BuyerId,
+		Price:          r.Price,
+		CreateTime:     createOrderReq.CreateTime,
+		SellerUserId:   r.SellerUserId,
+		IncomeChannel:  model.BillChannelBalance,
+		OutcomeChannel: model.BillChannelBalance,
+	}
+	sendSoldResultMsg(soldResult)
 
 	return BalancePayResp{
 		OrderId: orderId,
 	}, nil
 }
 
-func genOrderAndBill(c *gin.Context, createOrderReq CreateOrderReq,
-	sellerUserId int, promptTitle string, incomeChannel, outcomeChannel int) {
-	_, e := createOrderReq.CreateOrder(c)
-	if e != nil {
-		utils.Log().Error(c.FullPath(), "createOrderReq.CreateOrder error: %s", e.Err.Error())
-	}
-
-	// 生成账单
-	bill := model.Bill{
-		UserId:     sellerUserId,
-		Type:       model.BillTypeIncome,
-		Amount:     createOrderReq.Price,
-		Channel:    incomeChannel,
-		Remark:     fmt.Sprintf("售出 Prompt - %s", promptTitle),
-		CreateTime: time.Now(),
-	}
-	if _, e := AddBill(c, bill); e != nil {
-		utils.Log().Error(c.FullPath(), "Add seller bill error: %s", e.Err.Error())
-	}
-
-	bill.UserId = createOrderReq.BuyerId
-	bill.Type = model.BillTypeOutcome
-	bill.Channel = outcomeChannel
-	bill.Remark = fmt.Sprintf("购买 Prompt - %s", promptTitle)
-	if _, e := AddBill(c, bill); e != nil {
-		utils.Log().Error(c.FullPath(), "Add buyer bill error: %s", e.Err.Error())
-	}
+func sendSoldResultMsg(soldResult vos.PromptSoldResult) {
+	jsonResult, _ := json.Marshal(soldResult)
+	kafka2.SendMessageAsync(constants.PromptSoldResultTopic,
+		"",
+		string(jsonResult),
+		func(message string) {
+		},
+		func(message string) {
+			utils.Log().Error("", "【MQ 发送】发送 Prompt 售出结果消息失败")
+		},
+	)
 }

@@ -312,6 +312,7 @@ func UpdatePromptBrowseAmountById(c *gin.Context, promptId int) (bool, *errs.Err
 	}
 	return true, nil
 }
+
 func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
 	var promptModel model.Model
 	if model.DB.First(&promptModel, r.PromptModelId).Error != nil {
@@ -444,4 +445,10 @@ func UpdatePromptPublishStatusById(c *gin.Context, promptId int, status int) (bo
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词发布状态失败"))
 	}
 	return true, nil
+}
+
+func IncreasePromptSellAmount(promptId int) {
+	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("sell_amount", gorm.Expr("sell_amount + 1")).Error; err != nil {
+		utils.Log().Error("", "增加提示词销售量失败")
+	}
 }
