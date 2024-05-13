@@ -2,10 +2,14 @@ package service
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"promptrun-api/common/constants"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
+	"promptrun-api/third_party/kafka2"
+	"promptrun-api/third_party/kafka2/vos"
 	"promptrun-api/utils"
 	"slices"
 	"time"
@@ -357,14 +361,21 @@ func OrderRatingById(c *gin.Context, orderId int64, rating float64) (model.Order
 		return model.Order{}, errs.NewErrs(errs.ErrDBError, errors.New("DB 评价订单失败"))
 	}
 
-	// TODO：异步插入订单评分表，后续在低峰期使用定时任务扫描评分表，计算卖家和 Prompt 平均评分
-	go func() {
-		if _, e := AddOrderRating(c, order, rating); e != nil {
-			utils.Log().Error(c.FullPath(), "异步插入订单评分表失败")
-		}
-	}()
+	// 发送 MQ，异步发送评分通知，以及插入订单评分表，后续在低峰期使用定时任务扫描评分表，计算卖家和 Prompt 平均评分
+	buyerRatingResult := &vos.BuyerRatingResult{
+		Order: order,
+	}
 
-	go OrderRatingMsgNotice(c, order)
+	jsonResult, _ := json.Marshal(buyerRatingResult)
+	kafka2.SendMessageAsync(constants.PromptBuyerRatingTopic,
+		"",
+		string(jsonResult),
+		func(message string) {
+		},
+		func(message string) {
+			utils.Log().Error(c.FullPath(), "【MQ 发送】发送买家评分消息失败")
+		},
+	)
 
 	return order, nil
 }

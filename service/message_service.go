@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"promptrun-api/common/errs"
@@ -113,23 +114,23 @@ func LikeMsgNotice(c *gin.Context, likes model.Likes) {
 	}
 }
 
-func OrderRatingMsgNotice(c *gin.Context, order model.Order) {
-	seller, e := FindSellerById(c, order.SellerId)
+func OrderRatingMsgNotice(order model.Order) *errs.Errs {
+	seller, e := FindSellerById(&gin.Context{}, order.SellerId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "评价订单通知链路发生错误 -> 未找到卖家")
-		return
+		utils.Log().Error("", "评价订单通知链路发生错误 -> 未找到卖家")
+		return errs.NewErrs(errs.ErrDBError, errors.New("未找到卖家"))
 	}
 
-	user, e := FindUserById(c, order.BuyerId)
+	user, e := FindUserById(&gin.Context{}, order.BuyerId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "评价订单通知链路发生错误 -> 未找到用户")
-		return
+		utils.Log().Error("", "评价订单通知链路发生错误 -> 未找到用户")
+		return errs.NewErrs(errs.ErrDBError, errors.New("未找到卖家"))
 	}
 
-	prompt, e := FindPromptById(c, order.PromptId)
+	prompt, e := FindPromptById(&gin.Context{}, order.PromptId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "评价订单通知链路发生错误 -> 未找到 Prompt")
-		return
+		utils.Log().Error("", "评价订单通知链路发生错误 -> 未找到 Prompt")
+		return errs.NewErrs(errs.ErrDBError, errors.New("未找到卖家"))
 	}
 
 	message := model.Message{
@@ -142,15 +143,16 @@ func OrderRatingMsgNotice(c *gin.Context, order model.Order) {
 	}
 
 	if err := model.DB.Create(&message).Error; err != nil {
-		utils.Log().Error(c.FullPath(), "评价订单通知链路发生错误 -> 创建消息失败")
-		return
+		utils.Log().Error("", "评价订单通知链路发生错误 -> 创建消息失败")
+		return errs.NewErrs(errs.ErrDBError, errors.New("未找到卖家"))
 	}
+	return nil
 }
 
 func PromptSoldMsgNotice(c *gin.Context, promptTitle string, sellerUserId, buyerId int) {
 	user, e := FindUserById(c, buyerId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "Prompt 售出通知链路发生错误 -> 未找到用户")
+		utils.Log().Error("", "Prompt 售出通知链路发生错误 -> 未找到用户")
 		return
 	}
 
@@ -164,7 +166,7 @@ func PromptSoldMsgNotice(c *gin.Context, promptTitle string, sellerUserId, buyer
 	}
 
 	if err := model.DB.Create(&message).Error; err != nil {
-		utils.Log().Error(c.FullPath(), "Prompt 售出通知链路发生错误 -> 创建消息失败")
+		utils.Log().Error("", "Prompt 售出通知链路发生错误 -> 创建消息失败")
 		return
 	}
 }
@@ -172,13 +174,13 @@ func PromptSoldMsgNotice(c *gin.Context, promptTitle string, sellerUserId, buyer
 func PromptPublishMsgNotice(c *gin.Context, promptId int) {
 	prompt, e := FindPromptById(c, promptId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "Prompt 发布通知链路发生错误 -> 未找到 Prompt")
+		utils.Log().Error("", "Prompt 发布通知链路发生错误 -> 未找到 Prompt")
 		return
 	}
 
 	seller, e := FindSellerById(c, prompt.SellerId)
 	if e != nil {
-		utils.Log().Error(c.FullPath(), "Prompt 发布通知链路发生错误 -> 未找到卖家")
+		utils.Log().Error("", "Prompt 发布通知链路发生错误 -> 未找到卖家")
 		return
 
 	}
@@ -193,7 +195,7 @@ func PromptPublishMsgNotice(c *gin.Context, promptId int) {
 	}
 
 	if err := model.DB.Create(&message).Error; err != nil {
-		utils.Log().Error(c.FullPath(), "Prompt 发布通知链路发生错误 -> 创建消息失败")
+		utils.Log().Error("", "Prompt 发布通知链路发生错误 -> 创建消息失败")
 		return
 	}
 }

@@ -80,5 +80,10 @@ func getReaderWithTopic(topic string) *kafka.Reader {
 		MaxBytes:  10e6, // 10MB
 	})
 
+	// 设置 offset 为最新，即只消费新消息
+	if reader.SetOffset(kafka.LastOffset) != nil {
+		utils.Log().Error("", "set offset fail")
+	}
+
 	return reader
 }
