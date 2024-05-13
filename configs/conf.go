@@ -27,6 +27,6 @@ func Init() {
 	third_party.OSSInit()
 	third_party.MailInit()
 
-	kafka2.InitKafkaBroker()
+	kafka2.InitKafkaWriter()
 
 }

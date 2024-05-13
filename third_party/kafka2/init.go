@@ -1,29 +1,21 @@
 package kafka2
 
 import (
-	"context"
 	"github.com/segmentio/kafka-go"
 	"os"
-	"promptrun-api/utils"
-	"time"
 )
 
-var KafkaConn *kafka.Conn
+var KafkaWriter *kafka.Writer
 
-func InitKafkaBroker() {
-	broker := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
+// InitKafkaWriter 初始化 Kafka Writer
+func InitKafkaWriter() {
+	if KafkaWriter == nil {
+		broker := os.Getenv("KAFKA_HOST") + ":" + os.Getenv("KAFKA_PORT")
 
-	conn, err := kafka.DialContext(context.Background(), "tcp", broker)
-	if err != nil {
-		utils.Log().Panic("", "Kafka Broker 连接失败, errMsg: %s", err.Error())
-		panic(err)
+		KafkaWriter = &kafka.Writer{
+			Addr:                   kafka.TCP(broker),
+			Balancer:               &kafka.LeastBytes{}, // 指定分区的 balancer 模式为最小字节分布
+			AllowAutoTopicCreation: true,                // 自动创建不存在的 topic
+		}
 	}
-
-	err = conn.SetDeadline(time.Now().Add(10 * time.Second))
-	if err != nil {
-		utils.Log().Panic("", "Kafka 设置读写超时时间失败, errMsg: %s", err.Error())
-		panic(err)
-	}
-
-	KafkaConn = conn
 }
