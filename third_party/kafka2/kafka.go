@@ -49,8 +49,6 @@ func SendMessageAsync(topic string, key, message string, onSuccess func(message 
 			onSuccess(message)
 		}
 	}(sendResult)
-
-	return
 }
 
 // Subscribe 订阅消息

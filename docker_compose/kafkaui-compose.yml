@@ -1,0 +1,16 @@
+version: "3"
+services:
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    network_mode: host  # 使用宿主机网络，此时 ports 无效
+    ports:
+      - "9095:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: esc-aliyun-hangzhou-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: localhost:9092
+      SERVER_SERVLET_CONTEXT_PATH: /kafkaui
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: admin
+      DYNAMIC_CONFIG_ENABLED: 'true'
