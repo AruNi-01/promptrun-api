@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
+	"promptrun-api/third_party/cache"
 	"promptrun-api/utils"
 	"time"
 )
@@ -72,6 +74,9 @@ func (r *LikeReq) Like(c *gin.Context) (err *errs.Errs) {
 	if model.DB.Model(&model.Prompt{}).Where("id = ?", r.PromptId).UpdateColumn("like_amount", gorm.Expr("like_amount + ?", addOrSubAmount)).Error != nil {
 		utils.Log().Error(c.FullPath(), "更新点赞数失败")
 		return errs.NewErrs(errs.ErrDBError, errors.New("更新点赞数失败"))
+	} else {
+		// Prompt 分数发生变化，加入缓存
+		cache.RedisCli.SAdd(context.Background(), cache.PromptScoreChangeKey(), r.PromptId)
 	}
 	if model.DB.Model(&model.Seller{}).Where("id = ?", r.SellerId).UpdateColumn("like_amount", gorm.Expr("like_amount + ?", addOrSubAmount)).Error != nil {
 		utils.Log().Error(c.FullPath(), "更新卖家获点赞数失败")

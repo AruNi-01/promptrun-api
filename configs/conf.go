@@ -28,7 +28,7 @@ func Init() {
 	third_party.OSSInit()
 	third_party.MailInit()
 
-	cron.StarCronJobs()
+	cron.JobsInit()
 
 	kafka2.InitKafkaWriter()
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -8,6 +9,7 @@ import (
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/third_party"
+	"promptrun-api/third_party/cache"
 	"promptrun-api/utils"
 	"strconv"
 	"time"
@@ -156,10 +158,12 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 
 // FindPromptFullInfoById 根据 ID 查找提示词的详细信息（提示词详情页使用借口）
 func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *errs.Errs) {
-	// TODO: 暂时用此方法更新提示词浏览量，后续考虑使用 Redis
-	go func(promptId int) {
-		updatePromptBrowseAmountAsync(c, promptId)
-	}(promptId)
+	if LatestBrowseAmountUpdateTime.Add(BrowseAmountUpdateInterval).Before(time.Now()) {
+		LatestBrowseAmountUpdateTime = time.Now()
+		if _, err := UpdatePromptBrowseAmountById(c, promptId); err != nil {
+			utils.Log().Error(c.FullPath(), "更新提示词浏览量失败, errMsg: %s", err.Err.Error())
+		}
+	}
 
 	prompt, e := FindPromptById(c, promptId)
 	if e != nil {
@@ -189,15 +193,6 @@ func FindPromptFullInfoById(c *gin.Context, promptId int) (PromptDetailResp, *er
 		PromptImgList: promptImgList,
 	}, nil
 
-}
-
-func updatePromptBrowseAmountAsync(c *gin.Context, promptId int) {
-	if LatestBrowseAmountUpdateTime.Add(BrowseAmountUpdateInterval).Before(time.Now()) {
-		LatestBrowseAmountUpdateTime = time.Now()
-		if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("browse_amount", gorm.Expr("browse_amount + 1")).Error; err != nil {
-			utils.Log().Error(c.FullPath(), "异步更新提示词浏览量失败")
-		}
-	}
 }
 
 // FindPromptById 根据 ID 查找提示词
@@ -310,6 +305,10 @@ func UpdatePromptBrowseAmountById(c *gin.Context, promptId int) (bool, *errs.Err
 		utils.Log().Error(c.FullPath(), "更新提示词浏览量失败")
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词浏览量失败"))
 	}
+
+	// Prompt 分数发生变化，加入缓存
+	cache.RedisCli.SAdd(context.Background(), cache.PromptScoreChangeKey(), promptId)
+
 	return true, nil
 }
 
@@ -343,6 +342,9 @@ func (r *PromptPublishReq) PromptPublish(c *gin.Context) (bool, *errs.Errs) {
 		utils.Log().Error(c.FullPath(), "DB 创建提示词失败")
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 创建提示词失败"))
 	}
+
+	// Prompt 分数发生变化，加入缓存
+	cache.RedisCli.SAdd(context.Background(), cache.PromptScoreChangeKey(), prompt.Id)
 
 	switch promptModel.MediaType {
 	case model.ModelMediaTypeText:
@@ -450,6 +452,9 @@ func UpdatePromptPublishStatusById(c *gin.Context, promptId int, status int) (bo
 func IncreasePromptSellAmount(promptId int) {
 	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("sell_amount", gorm.Expr("sell_amount + 1")).Error; err != nil {
 		utils.Log().Error("", "增加提示词销售量失败")
+	} else {
+		// Prompt 分数发生变化，加入缓存
+		cache.RedisCli.SAdd(context.Background(), cache.PromptScoreChangeKey(), promptId)
 	}
 }
 
@@ -457,6 +462,18 @@ func UpdatePromptRating(promptId int, rating float64) (bool, *errs.Errs) {
 	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("rating", rating).Error; err != nil {
 		utils.Log().Error("", "更新提示词评分失败")
 		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词评分失败"))
+	}
+
+	// Prompt 分数发生变化，加入缓存
+	cache.RedisCli.SAdd(context.Background(), cache.PromptScoreChangeKey(), promptId)
+
+	return true, nil
+}
+
+func UpdatePromptScore(promptId int, score float64) (bool, *errs.Errs) {
+	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("score", score).Error; err != nil {
+		utils.Log().Error("", "更新提示词分数失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词分数失败"))
 	}
 	return true, nil
 }

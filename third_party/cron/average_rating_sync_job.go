@@ -5,7 +5,6 @@ import (
 	"github.com/robfig/cron/v3"
 	"promptrun-api/service"
 	"promptrun-api/utils"
-	"time"
 )
 
 const (
@@ -14,15 +13,15 @@ const (
 
 // 低峰期使用定时任务扫描 order_rating 表，同步评分到 seller、prompt 表（计算平均评分）
 func syncAverageRatingJob() {
-	nyc, _ := time.LoadLocation("Asia/Shanghai")
-	c := cron.New(cron.WithLocation(nyc))
+	location := utils.GetShanghaiLocation()
+	c := cron.New(cron.WithLocation(location))
 	// 每天凌晨 2 点执行
 	_, err := c.AddFunc(SyncAverageRatingCron, func() {
-		utils.Log().Info("", "【定时任务】SyncAverageRatingJob start...")
+		utils.Log().Info("", "【定时任务】syncAverageRatingJob start...")
 		syncAverageRating()
 	})
 	if err != nil {
-		utils.Log().Panic("", "【定时任务】Add SyncAverageRatingJob error: %s", err.Error())
+		utils.Log().Panic("", "【定时任务】Add syncAverageRatingJob error: %s", err.Error())
 		panic(err)
 	}
 	c.Start()

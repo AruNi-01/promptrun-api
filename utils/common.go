@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/google/uuid"
 	"strings"
+	"time"
 )
 
 // GenUUID 生成 32bit 纯字符串的随机串
@@ -20,4 +21,9 @@ func GenSnowflakeId() int64 {
 
 	// 截取低 16 位作为唯一 ID
 	return node.Generate().Int64() / 1000
+}
+
+func GetShanghaiLocation() *time.Location {
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	return location
 }
