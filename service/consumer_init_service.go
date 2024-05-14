@@ -64,7 +64,7 @@ func promptBuyerRatingConsumerInit() {
 		}
 
 		order := buyerRatingResult.Order
-		// 插入订单评分表
+		// 插入订单评分表，后续在低峰期使用定时任务扫描评分表，计算卖家和 Prompt 平均评分
 		if _, e := AddOrderRating(order); e != nil {
 			utils.Log().Error("", "【MQ 消费】, 异步插入订单评分表失败, errMsg: %s", e.Err.Error())
 		}

@@ -77,3 +77,11 @@ func IncreaseSellerSellAmount(sellerId int) (bool, *errs.Errs) {
 	}
 	return true, nil
 }
+
+func UpdateSellerRating(sellerId int, rating float64) (bool, *errs.Errs) {
+	if err := model.DB.Model(&model.Seller{}).Where("id = ?", sellerId).Update("rating", rating).Error; err != nil {
+		utils.Log().Error("", "DB 更新卖家评分失败，errMsg: %s", err.Error())
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 更新卖家评分失败"))
+	}
+	return true, nil
+}

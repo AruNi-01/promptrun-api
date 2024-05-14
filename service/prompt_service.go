@@ -452,3 +452,11 @@ func IncreasePromptSellAmount(promptId int) {
 		utils.Log().Error("", "增加提示词销售量失败")
 	}
 }
+
+func UpdatePromptRating(promptId int, rating float64) (bool, *errs.Errs) {
+	if err := model.DB.Model(model.Prompt{}).Where("id = ?", promptId).UpdateColumn("rating", rating).Error; err != nil {
+		utils.Log().Error("", "更新提示词评分失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("更新提示词评分失败"))
+	}
+	return true, nil
+}
