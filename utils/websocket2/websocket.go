@@ -36,7 +36,7 @@ func WsHandler(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	// 创建一个定时器用于服务端心跳
-	pingTicker := time.NewTicker(time.Second * 10)
+	pingTicker := time.NewTicker(time.Second * 30)
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		utils.Log().Error("", "websocket upgrade fail, errMsg: %s", err.Error())
