@@ -136,6 +136,11 @@ func SetupRouter() *gin.Engine {
 				message2.POST("api/v1/message/readAll/:userId", api.ReadAllMessage)
 				message2.GET("api/v1/message/notReadCountByUserId/:userId", api.MessageNotReadCountByUserId)
 			}
+
+			websocket2 := rootGroup.Group("")
+			{
+				websocket2.GET("api/v1/websocket/messageNotReadCountByUserId/:userId", api.WsMessageNotReadCountByUserId)
+			}
 		}
 
 	}

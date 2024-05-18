@@ -7,6 +7,8 @@ import (
 	"promptrun-api/common/errs"
 	"promptrun-api/model"
 	"promptrun-api/utils"
+	"promptrun-api/utils/websocket2"
+	"strconv"
 	"time"
 )
 
@@ -112,6 +114,8 @@ func LikeMsgNotice(c *gin.Context, likes model.Likes) {
 		utils.Log().Error(c.FullPath(), "点赞 Prompt 通知链路发生错误 -> 创建消息失败")
 		return
 	}
+
+	websocket2.SendNew(MessageNotReadCountWsPrefix+strconv.Itoa(seller.UserId), []byte{})
 }
 
 func OrderRatingMsgNotice(order model.Order) *errs.Errs {
