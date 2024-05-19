@@ -80,6 +80,7 @@ func SellerBecomeMsgNotice(c *gin.Context, userId int) {
 		return
 	}
 
+	websocket2.SendNew(MessageNotReadCountWsPrefix+strconv.Itoa(userId), []byte{})
 }
 
 func LikeMsgNotice(c *gin.Context, likes model.Likes) {
@@ -150,6 +151,9 @@ func OrderRatingMsgNotice(order model.Order) *errs.Errs {
 		utils.Log().Error("", "评价订单通知链路发生错误 -> 创建消息失败")
 		return errs.NewErrs(errs.ErrDBError, errors.New("未找到卖家"))
 	}
+
+	websocket2.SendNew(MessageNotReadCountWsPrefix+strconv.Itoa(seller.UserId), []byte{})
+
 	return nil
 }
 
@@ -173,6 +177,8 @@ func PromptSoldMsgNotice(promptTitle string, sellerUserId, buyerId int) {
 		utils.Log().Error("", "Prompt 售出通知链路发生错误 -> 创建消息失败")
 		return
 	}
+
+	websocket2.SendNew(MessageNotReadCountWsPrefix+strconv.Itoa(sellerUserId), []byte{})
 }
 
 func PromptPublishMsgNotice(c *gin.Context, promptId int) {
@@ -202,4 +208,6 @@ func PromptPublishMsgNotice(c *gin.Context, promptId int) {
 		utils.Log().Error("", "Prompt 发布通知链路发生错误 -> 创建消息失败")
 		return
 	}
+
+	websocket2.SendNew(MessageNotReadCountWsPrefix+strconv.Itoa(seller.UserId), []byte{})
 }
