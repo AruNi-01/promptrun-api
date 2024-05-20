@@ -41,6 +41,8 @@ type PromptListReq struct {
 	PublishStatus []int `json:"publishStatus,omitempty"`
 	AuditStatus   []int `json:"auditStatus,omitempty"`
 
+	SearchInput string `json:"searchInput,omitempty"`
+
 	UserId *int `json:"userId,omitempty"` // 用户 ID，用于获取某个用户（seller）发布的提示词
 }
 
@@ -136,6 +138,11 @@ func (r *PromptListReq) PromptList(c *gin.Context) ([]model.Prompt, *errs.Errs) 
 			return nil, e
 		}
 		query = query.Where("seller_id = ?", seller.Id)
+	}
+
+	// 搜索 title 和 intro
+	if r.SearchInput != "" {
+		query = query.Where("title LIKE ? OR intro LIKE ?", "%"+r.SearchInput+"%", "%"+r.SearchInput+"%")
 	}
 
 	// 注意：Count 要放在分页查询之前，否则会导致 count 为空
