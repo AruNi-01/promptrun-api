@@ -10,5 +10,5 @@ const (
 )
 
 func WsMessageNotReadCountByUserId(c *gin.Context, userId string) {
-	go websocket2.WsHandler(c.Writer, c.Request, MessageNotReadCountWsPrefix+userId)
+	websocket2.WsHandler(c.Writer, c.Request, MessageNotReadCountWsPrefix+userId)
 }

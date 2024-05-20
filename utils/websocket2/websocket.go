@@ -59,30 +59,32 @@ func WsHandler(w http.ResponseWriter, r *http.Request, id string) {
 		return nil
 	})
 
-	for {
-		select {
-		case content, _ := <-m:
-			// 从消息通道接收消息，然后推送给前端
-			utils.Log().Info("", "websocket send message, id: %s, message: %s", id, content)
-			err = conn.WriteJSON(content)
-			if err != nil {
-				utils.Log().Error("", "websocket write message fail, errMsg: %s", err.Error())
-				conn.Close()
-				unregisterClient(id)
-				return
-			}
-		case <-pingTicker.C:
-			// 服务端心跳:每30秒ping一次客户端，查看其是否在线
-			utils.Log().Info("", "websocket ping, id: %s", id)
-			err = conn.WriteMessage(websocket.PingMessage, []byte{})
-			if err != nil {
-				utils.Log().Info("", "websocket ping fail, will close socket, errMsg: %s", err.Error())
-				conn.Close()
-				unregisterClient(id)
-				return
+	go func() {
+		for {
+			select {
+			case content, _ := <-m:
+				// 从消息通道接收消息，然后推送给前端
+				utils.Log().Info("", "websocket send message, id: %s, message: %s", id, content)
+				err = conn.WriteJSON(content)
+				if err != nil {
+					utils.Log().Error("", "websocket write message fail, errMsg: %s", err.Error())
+					conn.Close()
+					unregisterClient(id)
+					return
+				}
+			case <-pingTicker.C:
+				// 服务端心跳:每30秒ping一次客户端，查看其是否在线
+				utils.Log().Info("", "websocket ping, id: %s", id)
+				err = conn.WriteMessage(websocket.PingMessage, []byte{})
+				if err != nil {
+					utils.Log().Info("", "websocket ping fail, will close socket, errMsg: %s", err.Error())
+					conn.Close()
+					unregisterClient(id)
+					return
+				}
 			}
 		}
-	}
+	}()
 }
 
 // 将客户端注册到客户端链接池
