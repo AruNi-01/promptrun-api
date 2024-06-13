@@ -100,6 +100,7 @@ func SetupRouter() *gin.Engine {
 				order2.GET("api/v1/order/findChartsFullInfoBySellerUserId/:sellerUserId", api.FindChartsFullInfoBySellerUserId)
 				order2.GET("api/v1/order/listAttachPromptDetailById/:orderId", api.OrderListAttachPromptDetailById)
 				order2.POST("api/v1/order/ratingById", api.OrderRatingById)
+				order2.GET("api/v1/order/isRepeatPurchase", api.IsRepeatPurchase)
 			}
 
 			like2 := auth.Group("")

@@ -396,3 +396,12 @@ func (r *CreateOrderReq) CreateOrder(c *gin.Context) (bool, *errs.Errs) {
 	}
 	return true, nil
 }
+
+func IsRepeatPurchase(c *gin.Context, buyerId, promptId int) (bool, *errs.Errs) {
+	var count int
+	if e := model.DB.Model(model.Order{}).Where("buyer_id = ? AND prompt_id = ?", buyerId, promptId).Count(&count).Error; e != nil {
+		utils.Log().Error(c.FullPath(), "DB 是否重复购买失败")
+		return false, errs.NewErrs(errs.ErrDBError, errors.New("DB 是否重复购买失败"))
+	}
+	return count > 0, nil
+}

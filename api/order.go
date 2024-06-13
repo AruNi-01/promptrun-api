@@ -68,3 +68,14 @@ func FindOrderById(c *gin.Context) {
 		c.JSON(http.StatusOK, SuccessResponse(order))
 	}
 }
+
+func IsRepeatPurchase(c *gin.Context) {
+	buyerId, _ := strconv.Atoi(c.Query("buyerId"))
+	promptId, _ := strconv.Atoi(c.Query("promptId"))
+	isRepeatPurchase, err := service.IsRepeatPurchase(c, buyerId, promptId)
+	if err != nil {
+		c.JSON(http.StatusOK, ErrorResponse(err.ErrCode, err.Err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, SuccessResponse(isRepeatPurchase))
+}
